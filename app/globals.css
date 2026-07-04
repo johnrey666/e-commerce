@@ -1,26 +1,77 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-brand: #e63946;
+  --color-brand-dark: #c1121f;
+  --color-brand-soft: #fff8f8;
+  --color-brand-faint: #fff0f1;
+  --color-brand-light: #fff8f8;
+
+  --color-ink: #c1121f;
+  --color-muted: #e6394680;
+  --color-line: #e6394618;
+  --color-surface: #ffffff;
+  --color-cream: #fff8f8;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: var(--color-brand-dark);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-brand);
+  color: white;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.eyebrow {
+  @apply text-[10px] font-semibold uppercase tracking-[0.32em] text-brand/70;
+}
+
+.section-title {
+  @apply text-[1.65rem] font-semibold tracking-[-0.02em] text-brand-dark sm:text-[2rem];
+}
+
+.section-sub {
+  @apply mt-2 text-sm leading-relaxed text-brand/45;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-full bg-brand px-8 py-3.5 text-[13px] font-semibold tracking-wide text-white transition-all duration-300 ease-out hover:bg-brand-dark hover:shadow-[0_8px_24px_-8px_rgba(230,57,70,0.55)] active:scale-[0.97];
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center rounded-full border border-brand/20 bg-white px-8 py-3.5 text-[13px] font-semibold text-brand transition-all duration-300 ease-out hover:border-brand hover:bg-brand-soft active:scale-[0.97];
+}
+
+.btn-ghost {
+  @apply inline-flex items-center gap-1 text-[13px] font-medium text-brand/55 transition-colors duration-200 hover:text-brand;
+}
+
+.nav-link {
+  @apply relative text-[13px] font-medium text-brand/45 transition-colors duration-200 hover:text-brand;
+}
+
+.card-minimal {
+  @apply overflow-hidden rounded-2xl bg-white transition-all duration-500 ease-out;
+}
+
+.input-field {
+  @apply w-full rounded-xl border border-brand/12 bg-white px-4 py-3.5 text-sm text-brand-dark outline-none transition-all duration-200 placeholder:text-brand/30 focus:border-brand focus:ring-4 focus:ring-brand/8;
 }

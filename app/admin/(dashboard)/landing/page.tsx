@@ -141,7 +141,21 @@ export default function AdminLandingPage() {
     );
   }
 
-  const subcategories = categories.filter((category) => category.parentId);
+  const subcategories = Array.from(
+    categories
+      .filter((category) => category.parentId)
+      .reduce((groups, category) => {
+        const key = category.name.trim().toLowerCase();
+        const existing = groups.get(key);
+        if (existing) {
+          existing.ids.push(category.id);
+        } else {
+          groups.set(key, { name: category.name, ids: [category.id] });
+        }
+        return groups;
+      }, new Map<string, { name: string; ids: string[] }>())
+      .values()
+  );
 
   return (
     <div>
@@ -269,14 +283,14 @@ export default function AdminLandingPage() {
           title="New Arrivals"
           subtitle="Fresh finds, just racked"
           href="/shop?section=new-arrivals"
-          products={products.filter((product) => product.isNewArrival)}
+          products={products.filter((product) => product.isNewArrival).slice(0, 2)}
           brands={brands}
         />
         <ProductCarousel
           title="On Sale"
           subtitle="Good catches, better prices"
           href="/shop?section=on-sale"
-          products={products.filter((product) => product.onSale)}
+          products={products.filter((product) => product.onSale).slice(0, 2)}
           brands={brands}
         />
       </div>
@@ -289,13 +303,12 @@ export default function AdminLandingPage() {
         </h2>
         <div className="mt-7 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {subcategories.map((category, index) => {
-            const parent = categories.find(
-              (candidate) => candidate.id === category.parentId
-            );
             const image =
-              content.categoryImages[category.id] || scatteredSample(index + 3);
+              category.ids
+                .map((id) => content.categoryImages[id])
+                .find(Boolean) || scatteredSample(index + 3);
             return (
-              <div key={category.id} className="border border-ink/10 p-3">
+              <div key={category.name.toLowerCase()} className="border border-ink/10 p-3">
                 <div className="relative aspect-[4/5] overflow-hidden bg-brand-soft">
                   <Image
                     src={image}
@@ -306,10 +319,7 @@ export default function AdminLandingPage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-3 text-center text-white">
-                    <p className="text-[8px] uppercase tracking-[0.25em] text-white/60">
-                      {parent?.name}
-                    </p>
-                    <p className="mt-1 font-display text-lg font-medium">
+                    <p className="font-display text-lg font-medium">
                       {category.name}
                     </p>
                   </div>
@@ -322,12 +332,16 @@ export default function AdminLandingPage() {
                     onFile={(file) =>
                       void uploadAndSave(
                         file,
-                        `category-${category.id}`,
-                        content.categoryImages[category.id] || "",
+                        `category-${index + 1}`,
+                        category.ids
+                          .map((id) => content.categoryImages[id])
+                          .find(Boolean) || "",
                         (url) => ({
                           categoryImages: {
                             ...content.categoryImages,
-                            [category.id]: url,
+                            ...Object.fromEntries(
+                              category.ids.map((id) => [id, url])
+                            ),
                           },
                         })
                       )

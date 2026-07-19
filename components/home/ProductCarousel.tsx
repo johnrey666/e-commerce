@@ -38,30 +38,34 @@ export function ProductCarousel({
               {subtitle && <p className="section-sub">{subtitle}</p>}
             </div>
             <div className="flex items-center gap-3">
-              <Link href={href} className="btn-ghost mr-3 hidden sm:inline-flex">
+              <Link href={href} className="btn-ghost sm:mr-3">
                 View All
               </Link>
-              <button
-                onClick={() => scrollBy(-1)}
-                aria-label={`Scroll ${title} left`}
-                className="grid size-10 place-items-center border border-ink/15 text-ink transition-all duration-300 hover:border-ink hover:bg-ink hover:text-paper"
-              >
-                <ChevronLeftIcon width={14} height={14} strokeWidth={1.5} />
-              </button>
-              <button
-                onClick={() => scrollBy(1)}
-                aria-label={`Scroll ${title} right`}
-                className="grid size-10 place-items-center border border-ink/15 text-ink transition-all duration-300 hover:border-ink hover:bg-ink hover:text-paper"
-              >
-                <ChevronRightIcon width={14} height={14} strokeWidth={1.5} />
-              </button>
+              {products.length > 2 && (
+                <>
+                  <button
+                    onClick={() => scrollBy(-1)}
+                    aria-label={`Scroll ${title} left`}
+                    className="hidden size-10 place-items-center border border-ink/15 text-ink transition-all duration-300 hover:border-ink hover:bg-ink hover:text-paper sm:grid"
+                  >
+                    <ChevronLeftIcon width={14} height={14} strokeWidth={1.5} />
+                  </button>
+                  <button
+                    onClick={() => scrollBy(1)}
+                    aria-label={`Scroll ${title} right`}
+                    className="hidden size-10 place-items-center border border-ink/15 text-ink transition-all duration-300 hover:border-ink hover:bg-ink hover:text-paper sm:grid"
+                  >
+                    <ChevronRightIcon width={14} height={14} strokeWidth={1.5} />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </Reveal>
 
         <div
           ref={scroller}
-          className="no-scrollbar -mx-5 flex snap-x gap-6 overflow-x-auto px-5 sm:-mx-10 sm:px-10"
+          className="no-scrollbar flex snap-x gap-5 overflow-x-auto sm:gap-6"
         >
           {products.map((p, i) => (
             <Reveal

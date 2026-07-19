@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useMounted } from "@/lib/hooks";
 import { selectCartCount, useCartStore } from "@/lib/store/cart-store";
@@ -20,12 +20,15 @@ export const MOBILE_BAR_OFFSET = "calc(3.5rem + env(safe-area-inset-bottom))";
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const mounted = useMounted();
   const count = useCartStore(selectCartCount);
   const openDrawer = useCartStore((s) => s.openDrawer);
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const hideMobileBar =
+    pathname.startsWith("/product/") || pathname === "/checkout";
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +88,7 @@ export function Header() {
 
       {/* Mobile menu sheet — slides up above the bottom bar */}
       <AnimatePresence>
-        {open && (
+        {open && !hideMobileBar && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -152,7 +155,7 @@ export function Header() {
 
       {/* Mobile search sheet — slides up above the bottom bar */}
       <AnimatePresence>
-        {searchOpen && (
+        {searchOpen && !hideMobileBar && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -189,7 +192,7 @@ export function Header() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search the collection…"
                     aria-label="Search products"
-                    className="w-full border border-ink/15 bg-surface py-3.5 pl-11 pr-4 text-[13px] text-ink outline-none transition-colors duration-300 placeholder:text-ink/30 focus:border-ink"
+                    className="w-full border border-ink/15 bg-surface py-3.5 pl-11 pr-4 text-base text-ink outline-none transition-colors duration-300 placeholder:text-ink/30 focus:border-ink sm:text-[13px]"
                   />
                 </div>
                 <button
@@ -205,11 +208,12 @@ export function Header() {
       </AnimatePresence>
 
       {/* Mobile bottom bar — menu + search; the bag lives in the header */}
-      <div
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-paper/95 backdrop-blur-xl md:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <div className="grid h-14 grid-cols-2">
+      {!hideMobileBar && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-paper/95 backdrop-blur-xl md:hidden"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <div className="grid h-14 grid-cols-2">
           <button
             onClick={() => {
               setSearchOpen(false);
@@ -247,8 +251,9 @@ export function Header() {
               Search
             </span>
           </button>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

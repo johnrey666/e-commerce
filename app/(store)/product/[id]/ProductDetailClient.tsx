@@ -252,13 +252,13 @@ export function ProductDetailClient({ id }: { id: string }) {
         </motion.div>
       </div>
 
-      {/* Mobile sticky add-to-bag bar — sits above the bottom tab bar */}
+      {/* Mobile sticky add-to-bag bar */}
       <motion.div
         initial={{ y: 80 }}
         animate={{ y: 0 }}
         transition={{ delay: 0.4, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className="fixed inset-x-0 z-30 border-t border-ink/10 bg-white/95 px-5 py-3.5 backdrop-blur-xl md:hidden"
-        style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}
+        style={{ bottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">

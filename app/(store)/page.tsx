@@ -25,6 +25,21 @@ function sectionProducts(section: CuratedSection, products: Product[]) {
 export default function HomePage() {
   const { products, brands, categories, ready } = useCatalog();
   const { content } = useLandingContent();
+  const subcategoryGroups = Array.from(
+    categories
+      .filter((category) => category.parentId !== null)
+      .reduce((groups, category) => {
+        const key = category.name.trim().toLowerCase();
+        const existing = groups.get(key);
+        if (existing) {
+          existing.ids.push(category.id);
+        } else {
+          groups.set(key, { name: category.name, ids: [category.id] });
+        }
+        return groups;
+      }, new Map<string, { name: string; ids: string[] }>())
+      .values()
+  );
 
   return (
     <div className="bg-paper">
@@ -107,7 +122,7 @@ export default function HomePage() {
             title={section.title}
             subtitle={section.subtitle}
             href={`/shop?section=${section.filter}`}
-            products={sectionProducts(section, products)}
+            products={sectionProducts(section, products).slice(0, 2)}
             brands={brands}
           />
         ))}
@@ -128,16 +143,18 @@ export default function HomePage() {
           </Reveal>
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5 md:gap-5">
-            {(ready ? categories.filter((c) => c.parentId !== null) : []).map((cat, i) => {
+            {(ready ? subcategoryGroups : []).map((group, i) => {
               const count = products.filter((p) =>
-                p.categoryIds.includes(cat.id)
+                p.categoryIds.some((id) => group.ids.includes(id))
               ).length;
-              const parent = categories.find((c) => c.id === cat.parentId);
-              const img = content.categoryImages[cat.id] || scatteredSample(i + 3);
+              const img =
+                group.ids
+                  .map((id) => content.categoryImages[id])
+                  .find(Boolean) || scatteredSample(i + 3);
               return (
-                <Reveal key={cat.id} delay={i * 0.05}>
+                <Reveal key={group.name.toLowerCase()} delay={i * 0.05}>
                   <Link
-                    href={`/shop?category=${cat.id}`}
+                    href={`/shop?category=${group.ids.join(",")}`}
                     className="group relative block aspect-[4/5] overflow-hidden bg-brand-soft"
                   >
                     <Image
@@ -149,11 +166,8 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/5 to-transparent transition-opacity duration-500 group-hover:from-ink/80" />
                     <div className="absolute inset-x-0 bottom-0 p-5 text-center">
-                      <p className="mb-1 text-[8px] font-medium uppercase tracking-[0.3em] text-paper/55">
-                        {parent?.name}
-                      </p>
                       <p className="font-display text-lg font-medium text-paper">
-                        {cat.name}
+                        {group.name}
                       </p>
                       <p className="mt-1 text-[9px] font-medium uppercase tracking-[0.3em] text-paper/60">
                         {count} {count === 1 ? "piece" : "pieces"}

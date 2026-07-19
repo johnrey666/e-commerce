@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { MapPickerPlaceholder } from "@/components/MapPickerPlaceholder";
 import { ProductImage } from "@/components/ProductImage";
 import { formatPrice } from "@/lib/format";
@@ -66,6 +67,22 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
+      <div className="mb-10 flex items-center justify-between">
+        <Link
+          href="/shop"
+          className="inline-flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.25em] text-ink/50 transition-colors hover:text-ink"
+        >
+          <ChevronLeftIcon width={13} height={13} strokeWidth={1.5} />
+          The Collection
+        </Link>
+        <Link
+          href="/shop"
+          className="inline-flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.25em] text-ink/50 transition-colors hover:text-ink"
+        >
+          Browse More
+          <ChevronRightIcon width={13} height={13} strokeWidth={1.5} />
+        </Link>
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}

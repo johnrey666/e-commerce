@@ -61,7 +61,7 @@ export function ShopClient() {
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
     const c = searchParams.get("category");
-    return c ? [c] : [];
+    return c ? c.split(",").filter(Boolean) : [];
   });
   const [selectedBrands, setSelectedBrands] = useState<string[]>(() => {
     const b = searchParams.get("brand");

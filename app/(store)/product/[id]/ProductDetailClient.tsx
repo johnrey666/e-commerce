@@ -46,13 +46,21 @@ export function ProductDetailClient({ id }: { id: string }) {
   }
 
   const brand = brands.find((b) => b.id === product.brandId);
-  const category = categories.find((c) => c.id === product.categoryId);
+  const productCategories = categories.filter((c) =>
+    product.categoryIds.includes(c.id)
+  );
+  const categoryNames = productCategories.map((c) => c.name).join(", ");
+  const primaryCategory = productCategories[0];
   const percent = discountPercent(product);
   const soldOut = product.stock <= 0;
   const chosenSize = size ?? product.sizes[0];
 
   const related = products
-    .filter((p) => p.id !== product.id && p.categoryId === product.categoryId)
+    .filter(
+      (p) =>
+        p.id !== product.id &&
+        p.categoryIds.some((id) => product.categoryIds.includes(id))
+    )
     .slice(0, 4);
 
   const handleAdd = () => {
@@ -175,7 +183,7 @@ export function ProductDetailClient({ id }: { id: string }) {
                 Category
               </dt>
               <dd className="mt-1.5 text-[13px] font-medium text-ink">
-                {category?.name ?? "—"}
+                {categoryNames || "—"}
               </dd>
             </div>
             <div className="px-2">
@@ -284,7 +292,7 @@ export function ProductDetailClient({ id }: { id: string }) {
                 <p className="eyebrow">Complete the Look</p>
               </div>
               <h2 className="section-title mt-5">
-                More {category?.name ?? "Pieces"}
+                More {primaryCategory?.name ?? "Pieces"}
               </h2>
             </div>
           </Reveal>

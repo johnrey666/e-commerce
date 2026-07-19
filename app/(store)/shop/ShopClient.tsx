@@ -1,22 +1,41 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { CloseIcon, FilterIcon, SearchIcon } from "@/components/icons";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  CloseIcon,
+  FilterIcon,
+  SearchIcon,
+} from "@/components/icons";
 import { ProductCard } from "@/components/ProductCard";
 import { effectivePrice } from "@/lib/format";
 import { useCatalog } from "@/lib/hooks";
 
 type SortKey = "newest" | "price-asc" | "price-desc" | "name-asc" | "name-desc";
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "newest", label: "Newest first" },
-  { value: "price-asc", label: "Price: low to high" },
-  { value: "price-desc", label: "Price: high to low" },
-  { value: "name-asc", label: "Name: A–Z" },
-  { value: "name-desc", label: "Name: Z–A" },
+const SORT_OPTIONS: {
+  value: SortKey;
+  label: string;
+  dir?: "up" | "down";
+}[] = [
+  { value: "newest", label: "Newest" },
+  { value: "price-asc", label: "Price", dir: "up" },
+  { value: "price-desc", label: "Price", dir: "down" },
+  { value: "name-asc", label: "Name", dir: "up" },
+  { value: "name-desc", label: "Name", dir: "down" },
 ];
+
+function SortDirIcon({ dir }: { dir?: "up" | "down" }) {
+  if (!dir) return null;
+  const Icon = dir === "up" ? ArrowUpIcon : ArrowDownIcon;
+  return <Icon width={13} height={13} strokeWidth={1.75} />;
+}
 
 const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL", "4XL"];
 
@@ -33,7 +52,13 @@ export function ShopClient() {
   const searchParams = useSearchParams();
   const { products, brands, categories, ready } = useCatalog();
 
-  const [query, setQuery] = useState("");
+  const qParam = searchParams.get("q") ?? "";
+  const [queryState, setQueryState] = useState({
+    source: qParam,
+    value: qParam,
+  });
+  const query = queryState.source === qParam ? queryState.value : qParam;
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
     const c = searchParams.get("category");
     return c ? [c] : [];
@@ -44,9 +69,36 @@ export function ShopClient() {
   });
   const section = searchParams.get("section"); // new-arrivals | on-sale
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [maxPrice, setMaxPrice] = useState<number>(3000);
+  const [maxPrice, setMaxPrice] = useState<number>(Number.POSITIVE_INFINITY);
   const [sort, setSort] = useState<SortKey>("newest");
+  const [sortOpen, setSortOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [expandedParents, setExpandedParents] = useState<string[]>([]);
+
+  const parentCategories = useMemo(
+    () => categories.filter((c) => c.parentId === null),
+    [categories]
+  );
+
+  // Keep the parent of a selected subcategory expanded without synchronizing
+  // derived state in an effect.
+  const visibleParentIds = useMemo(() => {
+    const ids = new Set(expandedParents);
+    for (const id of selectedCategories) {
+      const parentId = categories.find((category) => category.id === id)?.parentId;
+      if (parentId) ids.add(parentId);
+    }
+    return ids;
+  }, [expandedParents, selectedCategories, categories]);
+
+  // Selecting a parent (Men/Women) also matches everything inside it.
+  const categoryMatchSet = useMemo(() => {
+    const set = new Set(selectedCategories);
+    for (const c of categories) {
+      if (c.parentId && set.has(c.parentId)) set.add(c.id);
+    }
+    return set;
+  }, [selectedCategories, categories]);
 
   const priceCeiling = useMemo(
     () =>
@@ -75,7 +127,9 @@ export function ShopClient() {
       );
     }
     if (selectedCategories.length > 0)
-      list = list.filter((p) => selectedCategories.includes(p.categoryId));
+      list = list.filter((p) =>
+        p.categoryIds.some((id) => categoryMatchSet.has(id))
+      );
     if (selectedBrands.length > 0)
       list = list.filter((p) => selectedBrands.includes(p.brandId));
     if (selectedSizes.length > 0)
@@ -100,7 +154,7 @@ export function ShopClient() {
         break;
     }
     return list;
-  }, [products, section, query, selectedCategories, selectedBrands, selectedSizes, maxPrice, sort]);
+  }, [products, section, query, selectedCategories, categoryMatchSet, selectedBrands, selectedSizes, maxPrice, sort]);
 
   const toggle = (list: string[], id: string) =>
     list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
@@ -115,7 +169,7 @@ export function ShopClient() {
     section === "new-arrivals"
       ? "New Arrivals"
       : section === "on-sale"
-        ? "Private Sale"
+        ? "On Sale"
         : "The Collection";
 
   const filterPanel = (
@@ -125,28 +179,83 @@ export function ShopClient() {
           Category
         </legend>
         <div className="space-y-3">
-          {categories.map((cat) => (
-            <label
-              key={cat.id}
-              className="flex cursor-pointer items-center gap-3 text-[13px] text-ink/70 transition-colors hover:text-ink"
-            >
-              <input
-                type="checkbox"
-                checked={selectedCategories.includes(cat.id)}
-                onChange={() =>
-                  setSelectedCategories((prev) => toggle(prev, cat.id))
-                }
-                className="size-3.5 accent-ink"
-              />
-              {cat.name}
-            </label>
-          ))}
+          {parentCategories.map((parent) => {
+            const children = categories.filter((c) => c.parentId === parent.id);
+            const expanded = visibleParentIds.has(parent.id);
+            return (
+              <div key={parent.id}>
+                <div className="flex items-center gap-3">
+                  <label className="flex flex-1 cursor-pointer items-center gap-3 text-[13px] font-medium text-ink/80 transition-colors hover:text-ink">
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(parent.id)}
+                      onChange={() =>
+                        setSelectedCategories((prev) => toggle(prev, parent.id))
+                      }
+                      className="size-3.5 accent-ink"
+                    />
+                    {parent.name}
+                  </label>
+                  {children.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedParents((prev) => toggle(prev, parent.id))
+                      }
+                      aria-expanded={expanded}
+                      aria-label={`${expanded ? "Collapse" : "Expand"} ${parent.name} categories`}
+                      className="grid size-7 place-items-center text-ink/45 transition-colors hover:text-ink"
+                    >
+                      <ChevronDownIcon
+                        width={14}
+                        height={14}
+                        strokeWidth={1.5}
+                        className={`transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  )}
+                </div>
+                <AnimatePresence initial={false}>
+                  {expanded && children.length > 0 && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="ml-1.5 mt-2.5 space-y-2.5 border-l border-ink/10 pb-1 pl-5">
+                        {children.map((cat) => (
+                          <label
+                            key={cat.id}
+                            className="flex cursor-pointer items-center gap-3 text-[13px] text-ink/70 transition-colors hover:text-ink"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedCategories.includes(cat.id)}
+                              onChange={() =>
+                                setSelectedCategories((prev) =>
+                                  toggle(prev, cat.id)
+                                )
+                              }
+                              className="size-3.5 accent-ink"
+                            />
+                            {cat.name}
+                          </label>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
         </div>
       </fieldset>
 
       <fieldset>
         <legend className="mb-4 text-[10px] font-medium uppercase tracking-[0.35em] text-ink/50">
-          House
+          Brand
         </legend>
         <div className="space-y-3">
           {brands.map((brand) => (
@@ -222,7 +331,7 @@ export function ShopClient() {
             setSelectedCategories([]);
             setSelectedBrands([]);
             setSelectedSizes([]);
-            setMaxPrice(priceCeiling);
+            setMaxPrice(Number.POSITIVE_INFINITY);
           }}
           className="text-[10px] font-medium uppercase tracking-[0.25em] text-accent underline-offset-4 hover:underline"
         >
@@ -249,11 +358,16 @@ export function ShopClient() {
             ? `${filtered.length} of ${products.length} pieces`
             : "Loading…"}
         </p>
+        {section && (
+          <Link href="/shop" className="btn-secondary mt-6 !px-6 !py-3">
+            Show All Collection
+          </Link>
+        )}
       </motion.div>
 
-      {/* Toolbar */}
+      {/* Toolbar — on mobile, search lives in the bottom bar's search sheet */}
       <div className="mt-8 flex flex-wrap items-center gap-3">
-        <div className="relative min-w-0 flex-1 sm:max-w-sm">
+        <div className="relative hidden min-w-0 flex-1 sm:block sm:max-w-sm">
           <SearchIcon
             width={16}
             height={16}
@@ -263,25 +377,88 @@ export function ShopClient() {
           <input
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) =>
+              setQueryState({ source: qParam, value: e.target.value })
+            }
             placeholder="Search the collection…"
             aria-label="Search products"
             className="w-full border border-ink/15 bg-surface py-3 pl-11 pr-4 text-[13px] text-ink outline-none transition-colors duration-300 placeholder:text-ink/30 focus:border-ink"
           />
         </div>
 
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as SortKey)}
-          aria-label="Sort products"
-          className="border border-ink/15 bg-surface px-4 py-3 text-[13px] text-ink outline-none transition-colors duration-300 focus:border-ink"
-        >
-          {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        <div className="relative min-w-0 flex-1 sm:flex-none">
+          <button
+            type="button"
+            onClick={() => setSortOpen((v) => !v)}
+            aria-haspopup="listbox"
+            aria-expanded={sortOpen}
+            aria-label="Sort products"
+            className="flex h-[46px] w-full items-center justify-between gap-3 border border-ink/15 bg-surface px-4 text-[13px] text-ink transition-colors duration-300 hover:border-ink sm:w-44"
+          >
+            <span className="flex items-center gap-2">
+              {SORT_OPTIONS.find((o) => o.value === sort)?.label}
+              <SortDirIcon
+                dir={SORT_OPTIONS.find((o) => o.value === sort)?.dir}
+              />
+            </span>
+            <ChevronDownIcon
+              width={14}
+              height={14}
+              strokeWidth={1.5}
+              className={`text-ink/45 transition-transform duration-300 ${sortOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          <AnimatePresence>
+            {sortOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-30"
+                  onClick={() => setSortOpen(false)}
+                  aria-hidden
+                />
+                <motion.ul
+                  role="listbox"
+                  aria-label="Sort options"
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18 }}
+                  className="absolute left-0 right-0 z-40 mt-1.5 border border-ink/15 bg-paper shadow-[0_16px_40px_-16px_rgba(0,0,0,0.25)] sm:left-auto sm:w-44"
+                >
+                  {SORT_OPTIONS.map((o) => {
+                    const active = o.value === sort;
+                    return (
+                      <li key={o.value}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          onClick={() => {
+                            setSort(o.value);
+                            setSortOpen(false);
+                          }}
+                          className={`flex w-full items-center justify-between px-4 py-3 text-[13px] transition-colors ${
+                            active
+                              ? "bg-surface font-medium text-ink"
+                              : "text-ink/65 hover:bg-surface hover:text-ink"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            {o.label}
+                            <SortDirIcon dir={o.dir} />
+                          </span>
+                          {active && (
+                            <CheckIcon width={13} height={13} strokeWidth={1.75} />
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </motion.ul>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
 
         <button
           onClick={() => setFiltersOpen(true)}

@@ -28,7 +28,7 @@ interface FormState {
   discountPrice: string;
   onSale: boolean;
   isNewArrival: boolean;
-  categoryId: string;
+  categoryIds: string[];
   brandId: string;
   condition: ProductCondition;
   images: string[];
@@ -50,7 +50,7 @@ export function ProductForm({ product }: { product?: Product }) {
     discountPrice: product?.discountPrice?.toString() ?? "",
     onSale: product?.onSale ?? false,
     isNewArrival: product?.isNewArrival ?? false,
-    categoryId: product?.categoryId ?? "",
+    categoryIds: product?.categoryIds ?? [],
     brandId: product?.brandId ?? "",
     condition: product?.condition ?? "Good",
     images: product?.images ?? [],
@@ -65,6 +65,14 @@ export function ProductForm({ product }: { product?: Product }) {
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  const toggleCategory = (id: string) =>
+    set(
+      "categoryIds",
+      form.categoryIds.includes(id)
+        ? form.categoryIds.filter((categoryId) => categoryId !== id)
+        : [...form.categoryIds, id]
+    );
 
   const uploadImages = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -139,6 +147,10 @@ export function ProductForm({ product }: { product?: Product }) {
       setImageError("Upload at least one product image.");
       return;
     }
+    if (form.categoryIds.length === 0) {
+      setSaveError("Select at least one category.");
+      return;
+    }
 
     const csv = (s: string) =>
       s.split(",").map((x) => x.trim()).filter(Boolean);
@@ -150,7 +162,7 @@ export function ProductForm({ product }: { product?: Product }) {
       discountPrice: form.discountPrice ? Number(form.discountPrice) : undefined,
       onSale: form.onSale,
       isNewArrival: form.isNewArrival,
-      categoryId: form.categoryId,
+      categoryIds: form.categoryIds,
       brandId: form.brandId,
       condition: form.condition,
       images: form.images,
@@ -217,28 +229,55 @@ export function ProductForm({ product }: { product?: Product }) {
               className="input-field"
             />
           </div>
-          <div className="grid gap-5 sm:grid-cols-3">
-            <div>
-              <label htmlFor="categoryId" className={labelClass}>
-                Category *
-              </label>
-              <select
-                id="categoryId"
-                required
-                value={form.categoryId}
-                onChange={(e) => set("categoryId", e.target.value)}
-                className="input-field"
-              >
-                <option value="" disabled>
-                  Select…
-                </option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
+          <fieldset>
+            <legend className={labelClass}>Categories *</legend>
+            <p className="-mt-1 mb-3 text-[12px] text-ink/45">
+              Select as many as needed. Choose from both departments to show
+              this product under Men and Women.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {categories
+                .filter((c) => c.parentId === null)
+                .map((parent) => (
+                  <div
+                    key={parent.id}
+                    className="border border-ink/10 bg-paper p-4"
+                  >
+                    <p className="mb-3 font-display text-base font-medium text-ink">
+                      {parent.name}
+                    </p>
+                    <div className="space-y-2.5">
+                      <label className="flex cursor-pointer items-center gap-2.5 text-[13px] text-ink/70">
+                        <input
+                          type="checkbox"
+                          checked={form.categoryIds.includes(parent.id)}
+                          onChange={() => toggleCategory(parent.id)}
+                          className="size-3.5 accent-ink"
+                        />
+                        General
+                      </label>
+                      {categories
+                        .filter((c) => c.parentId === parent.id)
+                        .map((category) => (
+                          <label
+                            key={category.id}
+                            className="flex cursor-pointer items-center gap-2.5 text-[13px] text-ink/70"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={form.categoryIds.includes(category.id)}
+                              onChange={() => toggleCategory(category.id)}
+                              className="size-3.5 accent-ink"
+                            />
+                            {category.name}
+                          </label>
+                        ))}
+                    </div>
+                  </div>
                 ))}
-              </select>
             </div>
+          </fieldset>
+          <div className="grid gap-5 sm:grid-cols-2">
             <div>
               <label htmlFor="brandId" className={labelClass}>
                 Brand *

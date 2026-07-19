@@ -40,7 +40,7 @@ interface CatalogState {
   updateBrand: (id: string, name: string) => Promise<void>;
   deleteBrand: (id: string) => Promise<void>;
 
-  addCategory: (name: string) => Promise<void>;
+  addCategory: (name: string, parentId: string) => Promise<void>;
   updateCategory: (id: string, name: string) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
 }
@@ -165,8 +165,12 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
     }));
   },
 
-  addCategory: async (name) => {
-    const category = await createCategory({ id: slugId(name), name });
+  addCategory: async (name, parentId) => {
+    const category = await createCategory({
+      id: `${parentId}-${slugId(name)}`,
+      name,
+      parentId,
+    });
     set((state) => ({
       categories: [...state.categories, category].sort((a, b) =>
         a.name.localeCompare(b.name)

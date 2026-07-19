@@ -79,9 +79,41 @@ create table if not exists public.brands (
 
 create table if not exists public.categories (
   id text primary key,
-  name text not null unique,
+  name text not null,
+  parent_id text references public.categories (id),
   created_at timestamptz not null default now()
 );
+
+-- Migrate databases created before categories became hierarchical.
+alter table public.categories
+  add column if not exists parent_id text references public.categories (id);
+
+-- Subcategories under different departments may share a name (e.g. "Hoodies"
+-- under both Men and Women), so uniqueness is scoped to the parent.
+alter table public.categories drop constraint if exists categories_name_key;
+create unique index if not exists categories_parent_name_idx
+  on public.categories (parent_id, name);
+create index if not exists categories_parent_id_idx
+  on public.categories (parent_id);
+
+-- Men and Women are fixed root departments — they can never be deleted.
+create or replace function public.protect_root_categories()
+returns trigger
+language plpgsql
+as $$
+begin
+  if old.id in ('men', 'women') then
+    raise exception 'The % department cannot be deleted.', old.name;
+  end if;
+  return old;
+end;
+$$;
+
+drop trigger if exists protect_root_categories on public.categories;
+create trigger protect_root_categories
+  before delete on public.categories
+  for each row
+  execute function public.protect_root_categories();
 
 create table if not exists public.products (
   id uuid primary key default gen_random_uuid(),
@@ -94,6 +126,7 @@ create table if not exists public.products (
   on_sale boolean not null default false,
   is_new_arrival boolean not null default false,
   category_id text not null references public.categories (id),
+  category_ids text[] not null default '{}',
   brand_id text not null references public.brands (id),
   condition text not null check (
     condition in ('Brand New', 'Like New', 'Excellent', 'Good', 'Fair')
@@ -105,8 +138,18 @@ create table if not exists public.products (
   created_at timestamptz not null default now()
 );
 
+-- Migrate the former single-category model. category_id remains as a
+-- compatibility primary category while category_ids powers storefront filters.
+alter table public.products
+  add column if not exists category_ids text[] not null default '{}';
+update public.products
+set category_ids = array[category_id]
+where cardinality(category_ids) = 0;
+
 create index if not exists products_category_id_idx
   on public.products (category_id);
+create index if not exists products_category_ids_idx
+  on public.products using gin (category_ids);
 create index if not exists products_brand_id_idx
   on public.products (brand_id);
 create index if not exists products_created_at_idx
@@ -155,17 +198,65 @@ create policy "Admins can manage products"
   using (public.is_admin())
   with check (public.is_admin());
 
+-- Editable landing-page media. A single row controls the storefront hero,
+-- partner-brand images, and optional images for each subcategory.
+create table if not exists public.site_content (
+  id text primary key check (id = 'landing'),
+  hero_video_url text not null default '/sample.mp4',
+  brand_images text[] not null default '{}',
+  category_images jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.site_content (id)
+values ('landing')
+on conflict (id) do nothing;
+
+alter table public.site_content enable row level security;
+
+drop policy if exists "Anyone can read site content" on public.site_content;
+create policy "Anyone can read site content"
+  on public.site_content for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists "Admins can manage site content" on public.site_content;
+create policy "Admins can manage site content"
+  on public.site_content for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
 -- Keep the existing starter filters, but leave products empty for real stock.
-insert into public.categories (id, name)
+-- Men and Women are the two root departments; everything else lives inside.
+insert into public.categories (id, name, parent_id)
 values
-  ('men', 'Men'),
-  ('women', 'Women'),
-  ('shirts', 'Shirts'),
-  ('shorts', 'Shorts'),
-  ('pants', 'Pants'),
-  ('hoodies', 'Hoodies'),
-  ('others', 'Others')
-on conflict (id) do update set name = excluded.name;
+  ('men', 'Men', null),
+  ('women', 'Women', null)
+on conflict (id) do update set
+  name = excluded.name,
+  parent_id = null;
+
+-- Databases created before the hierarchy had flat categories (shirts, pants,
+-- …). Park them under Men so nothing is orphaned — reorganize in the admin.
+update public.categories
+set parent_id = 'men'
+where parent_id is null
+  and id not in ('men', 'women');
+
+insert into public.categories (id, name, parent_id)
+values
+  ('men-shirts', 'Shirts', 'men'),
+  ('men-shorts', 'Shorts', 'men'),
+  ('men-pants', 'Pants', 'men'),
+  ('men-hoodies', 'Hoodies', 'men'),
+  ('men-others', 'Others', 'men'),
+  ('women-shirts', 'Shirts', 'women'),
+  ('women-shorts', 'Shorts', 'women'),
+  ('women-pants', 'Pants', 'women'),
+  ('women-hoodies', 'Hoodies', 'women'),
+  ('women-others', 'Others', 'women')
+on conflict do nothing;
 
 insert into public.brands (id, name)
 values
@@ -203,6 +294,15 @@ begin
       and tablename = 'categories'
   ) then
     alter publication supabase_realtime add table public.categories;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'site_content'
+  ) then
+    alter publication supabase_realtime add table public.site_content;
   end if;
 end
 $$;
@@ -261,4 +361,63 @@ create policy "Admins can delete product images"
   using (
     bucket_id = 'product-images'
     and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- Public landing-page media. Videos are capped at 100 MB; images and videos
+-- are stored under the current admin's folder so replaced files can be removed.
+insert into storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+)
+values (
+  'landing-media',
+  'landing-media',
+  true,
+  104857600,
+  array[
+    'image/jpeg', 'image/png', 'image/webp', 'image/avif',
+    'video/mp4', 'video/webm'
+  ]
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Admins can upload landing media" on storage.objects;
+create policy "Admins can upload landing media"
+  on storage.objects for insert
+  to authenticated
+  with check (
+    bucket_id = 'landing-media'
+    and (storage.foldername(name))[1] = auth.uid()::text
+    and public.is_admin()
+  );
+
+drop policy if exists "Admins can update landing media" on storage.objects;
+create policy "Admins can update landing media"
+  on storage.objects for update
+  to authenticated
+  using (
+    bucket_id = 'landing-media'
+    and (storage.foldername(name))[1] = auth.uid()::text
+    and public.is_admin()
+  )
+  with check (
+    bucket_id = 'landing-media'
+    and (storage.foldername(name))[1] = auth.uid()::text
+    and public.is_admin()
+  );
+
+drop policy if exists "Admins can delete landing media" on storage.objects;
+create policy "Admins can delete landing media"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'landing-media'
+    and (storage.foldername(name))[1] = auth.uid()::text
+    and public.is_admin()
   );

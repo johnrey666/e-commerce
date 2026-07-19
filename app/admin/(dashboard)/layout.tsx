@@ -9,6 +9,7 @@ import { useAuthStore } from "@/lib/store/auth-store";
 
 const ADMIN_LINKS = [
   { href: "/admin", label: "Dashboard" },
+  { href: "/admin/landing", label: "Landing Page" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/brands", label: "Brands" },
   { href: "/admin/categories", label: "Categories" },

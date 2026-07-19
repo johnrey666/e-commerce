@@ -8,6 +8,16 @@ export interface Brand {
 export interface Category {
   id: string;
   name: string;
+  /** Root departments (Men/Women) have no parent; subcategories point to one. */
+  parentId: string | null;
+}
+
+export interface LandingContent {
+  heroVideoUrl: string;
+  /** Six optional overrides; empty slots use the bundled placeholder logos. */
+  brandImages: string[];
+  /** Optional storefront image keyed by subcategory ID. */
+  categoryImages: Record<string, string>;
 }
 
 export type ProductCondition =
@@ -27,7 +37,8 @@ export interface Product {
   /** Featured in the Discounts/Sale section. */
   onSale: boolean;
   isNewArrival: boolean;
-  categoryId: string;
+  /** A product may appear in categories under more than one department. */
+  categoryIds: string[];
   brandId: string;
   condition: ProductCondition;
   /**

@@ -129,7 +129,10 @@ export default function AdminProductsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-3.5 text-[13px] text-ink/55">
-                      {categories.find((c) => c.id === p.categoryId)?.name ?? "—"}{" "}
+                      {categories
+                        .filter((c) => p.categoryIds.includes(c.id))
+                        .map((c) => c.name)
+                        .join(", ") || "—"}{" "}
                       · {brands.find((b) => b.id === p.brandId)?.name ?? "—"}
                     </td>
                     <td className="px-6 py-3.5">

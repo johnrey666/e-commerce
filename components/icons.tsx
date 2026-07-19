@@ -69,6 +69,24 @@ export const TrashIcon = (p: IconProps) => (
   </svg>
 );
 
+export const ChevronDownIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
+export const ArrowUpIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="M12 19V5M5 12l7-7 7 7" />
+  </svg>
+);
+
+export const ArrowDownIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="M12 5v14M19 12l-7 7-7-7" />
+  </svg>
+);
+
 export const ChevronRightIcon = (p: IconProps) => (
   <svg {...base} {...p}>
     <path d="m9 6 6 6-6 6" />

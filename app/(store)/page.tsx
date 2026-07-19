@@ -4,10 +4,9 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { HeroGallery } from "@/components/home/HeroGallery";
-import { HeroShowcase } from "@/components/home/HeroShowcase";
 import { ProductCarousel } from "@/components/home/ProductCarousel";
 import { fadeUp, Reveal } from "@/components/Reveal";
-import { useCatalog } from "@/lib/hooks";
+import { useCatalog, useLandingContent } from "@/lib/hooks";
 import { scatteredSample } from "@/lib/sample-images";
 import { curatedSections } from "@/lib/seed-data";
 import type { CuratedSection, Product } from "@/lib/types";
@@ -25,6 +24,7 @@ function sectionProducts(section: CuratedSection, products: Product[]) {
 
 export default function HomePage() {
   const { products, brands, categories, ready } = useCatalog();
+  const { content } = useLandingContent();
 
   return (
     <div className="bg-paper">
@@ -38,7 +38,7 @@ export default function HomePage() {
           preload="metadata"
           aria-hidden
           className="absolute inset-0 h-full w-full object-cover"
-          src="/sample.mp4"
+          src={content.heroVideoUrl}
         />
         {/* Legibility veil */}
         <div className="absolute inset-0 bg-gradient-to-b from-ink/55 via-ink/35 to-ink/60" />
@@ -94,32 +94,23 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ——— Maisons strip ——— */}
+      {/* ——— Partner brands strip ——— */}
       <section className="mx-auto mt-20 max-w-[90rem] px-5 sm:mt-28 sm:px-10">
-        <HeroGallery />
+        <HeroGallery images={content.brandImages} />
       </section>
 
-      {/* ——— Featured ——— */}
-      {ready && (
-        <section className="mx-auto max-w-[90rem] px-5 py-20 sm:px-10 sm:py-28">
-          <Reveal>
-            <div className="mb-12 text-center">
-              <div className="rule-diamond mx-auto max-w-sm">
-                <p className="eyebrow">The Edit</p>
-              </div>
-              <h2 className="section-title mt-5">This Week&apos;s Selection</h2>
-            </div>
-          </Reveal>
-          <HeroShowcase products={products} />
-          <Reveal>
-            <div className="mt-12 text-center">
-              <Link href="/shop?section=new-arrivals" className="btn-secondary">
-                View All Pieces
-              </Link>
-            </div>
-          </Reveal>
-        </section>
-      )}
+      {/* ——— New arrivals, then on sale ——— */}
+      {ready &&
+        curatedSections.map((section) => (
+          <ProductCarousel
+            key={section.id}
+            title={section.title}
+            subtitle={section.subtitle}
+            href={`/shop?section=${section.filter}`}
+            products={sectionProducts(section, products)}
+            brands={brands}
+          />
+        ))}
 
       {/* ——— Categories ——— */}
       <section className="border-t border-ink/8 py-20 sm:py-28">
@@ -137,9 +128,12 @@ export default function HomePage() {
           </Reveal>
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5 md:gap-5">
-            {(ready ? categories : []).map((cat, i) => {
-              const count = products.filter((p) => p.categoryId === cat.id).length;
-              const img = scatteredSample(i + 3);
+            {(ready ? categories.filter((c) => c.parentId !== null) : []).map((cat, i) => {
+              const count = products.filter((p) =>
+                p.categoryIds.includes(cat.id)
+              ).length;
+              const parent = categories.find((c) => c.id === cat.parentId);
+              const img = content.categoryImages[cat.id] || scatteredSample(i + 3);
               return (
                 <Reveal key={cat.id} delay={i * 0.05}>
                   <Link
@@ -155,6 +149,9 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/5 to-transparent transition-opacity duration-500 group-hover:from-ink/80" />
                     <div className="absolute inset-x-0 bottom-0 p-5 text-center">
+                      <p className="mb-1 text-[8px] font-medium uppercase tracking-[0.3em] text-paper/55">
+                        {parent?.name}
+                      </p>
                       <p className="font-display text-lg font-medium text-paper">
                         {cat.name}
                       </p>
@@ -170,52 +167,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ——— Curated carousels ——— */}
-      {ready &&
-        curatedSections.map((section) => (
-          <ProductCarousel
-            key={section.id}
-            title={section.title}
-            subtitle={section.subtitle}
-            href={`/shop?section=${section.filter}`}
-            products={sectionProducts(section, products)}
-            brands={brands}
-          />
-        ))}
-
-      {/* ——— Brand index ——— */}
-      {ready && brands.length > 0 && (
-        <section className="border-t border-ink/8 py-20 sm:py-28">
-          <div className="mx-auto max-w-[90rem] px-5 text-center sm:px-10">
-            <Reveal>
-              <div className="rule-diamond mx-auto max-w-sm">
-                <p className="eyebrow">The Index</p>
-              </div>
-              <h2 className="section-title mt-5">Houses on the Rack</h2>
-            </Reveal>
-            <div className="mx-auto mt-12 flex max-w-3xl flex-wrap justify-center gap-x-10 gap-y-5">
-              {brands.map((b, i) => (
-                <Reveal key={b.id} delay={i * 0.04}>
-                  <Link
-                    href={`/shop?brand=${b.id}`}
-                    className="group relative font-display text-xl font-medium text-ink/55 transition-colors duration-300 hover:text-ink sm:text-2xl"
-                  >
-                    {b.name}
-                    <span className="absolute -bottom-1 left-0 h-px w-0 bg-ink transition-all duration-500 group-hover:w-full" />
-                  </Link>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* ——— Manifesto ——— */}
       <section className="border-t border-ink/8 bg-ink py-24 sm:py-32">
         <div className="mx-auto max-w-2xl px-5 text-center sm:px-10">
           <Reveal>
             <p className="text-[9px] font-medium uppercase tracking-[0.45em] text-paper/40">
-              The House Philosophy
+              The Brand Philosophy
             </p>
             <p className="mt-8 font-display text-2xl font-medium leading-relaxed text-paper sm:text-[1.75rem]">
               &ldquo;Luxury is not about more.

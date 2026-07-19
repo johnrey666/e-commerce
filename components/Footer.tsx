@@ -13,7 +13,7 @@ export function Footer() {
           </p>
         </div>
 
-        <div className="mt-16 grid gap-12 border-t border-ink/8 pt-12 text-center sm:grid-cols-3 sm:text-left">
+        <div className="mx-auto mt-16 grid max-w-2xl gap-12 border-t border-ink/8 pt-12 text-center sm:grid-cols-2 sm:text-left">
           <nav aria-label="Footer">
             <p className="mb-5 text-[9px] font-medium uppercase tracking-[0.4em] text-ink/40">
               Collection
@@ -37,7 +37,7 @@ export function Footer() {
                   href="/shop?section=on-sale"
                   className="transition-colors duration-300 hover:text-ink"
                 >
-                  Private Sale
+                  On Sale
                 </Link>
               </li>
             </ul>
@@ -49,19 +49,8 @@ export function Footer() {
             </p>
             <ul className="space-y-3 text-[13px] text-ink/55">
               <li>Door-to-door delivery</li>
-              <li>GCash payment</li>
+              <li>Online Fast Transaction</li>
               <li>Authenticity guaranteed</li>
-            </ul>
-          </div>
-
-          <div>
-            <p className="mb-5 text-[9px] font-medium uppercase tracking-[0.4em] text-ink/40">
-              The House
-            </p>
-            <ul className="space-y-3 text-[13px] text-ink/55">
-              <li>Every piece one of one</li>
-              <li>Hand-selected weekly</li>
-              <li>Metro Manila, PH</li>
             </ul>
           </div>
         </div>

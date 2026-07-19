@@ -24,10 +24,10 @@ export const HERO_LOGO_TILES: {
   className: string;
   label: string;
 }[] = [
-  { logo: blogo1, className: "col-span-1 row-span-1", label: "Brand partner 1" },
-  { logo: blogo2, className: "col-span-1 row-span-1", label: "Brand partner 2" },
-  { logo: blogo3, className: "col-span-1 row-span-2", label: "Brand partner 3" },
-  { logo: blogo4, className: "col-span-2 row-span-1", label: "Brand partner 4" },
-  { logo: blogo5, className: "col-span-1 row-span-1", label: "Brand partner 5" },
-  { logo: blogo6, className: "col-span-1 row-span-1", label: "Brand partner 6" },
+  { logo: blogo1, className: "col-span-1 row-span-1", label: "Partner brand 1" },
+  { logo: blogo2, className: "col-span-1 row-span-1", label: "Partner brand 2" },
+  { logo: blogo3, className: "col-span-1 row-span-2", label: "Partner brand 3" },
+  { logo: blogo4, className: "col-span-2 row-span-1", label: "Partner brand 4" },
+  { logo: blogo5, className: "col-span-1 row-span-1", label: "Partner brand 5" },
+  { logo: blogo6, className: "col-span-1 row-span-1", label: "Partner brand 6" },
 ];

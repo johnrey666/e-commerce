@@ -21,7 +21,7 @@ export default function AdminBrandsPage() {
   return (
     <NamedListManager
       title="Brands"
-      eyebrow="The Index"
+      eyebrow="Brands"
       description="Brands added here feed the brand filter on the shop page."
       items={brands}
       usageCount={(id) => products.filter((p) => p.brandId === id).length}

@@ -6,13 +6,18 @@ import type { Brand, Category, CuratedSection } from "./types";
  */
 
 export const seedCategories: Category[] = [
-  { id: "men", name: "Men" },
-  { id: "women", name: "Women" },
-  { id: "shirts", name: "Shirts" },
-  { id: "shorts", name: "Shorts" },
-  { id: "pants", name: "Pants" },
-  { id: "hoodies", name: "Hoodies" },
-  { id: "others", name: "Others" },
+  { id: "men", name: "Men", parentId: null },
+  { id: "women", name: "Women", parentId: null },
+  { id: "men-shirts", name: "Shirts", parentId: "men" },
+  { id: "men-shorts", name: "Shorts", parentId: "men" },
+  { id: "men-pants", name: "Pants", parentId: "men" },
+  { id: "men-hoodies", name: "Hoodies", parentId: "men" },
+  { id: "men-others", name: "Others", parentId: "men" },
+  { id: "women-shirts", name: "Shirts", parentId: "women" },
+  { id: "women-shorts", name: "Shorts", parentId: "women" },
+  { id: "women-pants", name: "Pants", parentId: "women" },
+  { id: "women-hoodies", name: "Hoodies", parentId: "women" },
+  { id: "women-others", name: "Others", parentId: "women" },
 ];
 
 export const seedBrands: Brand[] = [

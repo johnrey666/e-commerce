@@ -15,6 +15,7 @@ interface ProductRow {
   on_sale: boolean;
   is_new_arrival: boolean;
   category_id: string;
+  category_ids: string[];
   brand_id: string;
   condition: Product["condition"];
   images: string[];
@@ -36,7 +37,8 @@ function mapProduct(row: ProductRow): Product {
       row.discount_price == null ? undefined : Number(row.discount_price),
     onSale: row.on_sale,
     isNewArrival: row.is_new_arrival,
-    categoryId: row.category_id,
+    categoryIds:
+      row.category_ids?.length > 0 ? row.category_ids : [row.category_id],
     brandId: row.brand_id,
     condition: row.condition,
     images: row.images ?? [],
@@ -60,7 +62,11 @@ function productPayload(product: ProductInput | Partial<ProductInput>) {
   if (product.isNewArrival !== undefined) {
     payload.is_new_arrival = product.isNewArrival;
   }
-  if (product.categoryId !== undefined) payload.category_id = product.categoryId;
+  if (product.categoryIds !== undefined) {
+    payload.category_ids = product.categoryIds;
+    // Keep the original column populated for compatibility with existing SQL.
+    payload.category_id = product.categoryIds[0];
+  }
   if (product.brandId !== undefined) payload.brand_id = product.brandId;
   if (product.condition !== undefined) payload.condition = product.condition;
   if (product.images !== undefined) payload.images = product.images;
@@ -91,14 +97,24 @@ export async function fetchBrands(): Promise<Brand[]> {
   return data as Brand[];
 }
 
+interface CategoryRow {
+  id: string;
+  name: string;
+  parent_id: string | null;
+}
+
+function mapCategory(row: CategoryRow): Category {
+  return { id: row.id, name: row.name, parentId: row.parent_id };
+}
+
 export async function fetchCategories(): Promise<Category[]> {
   const { data, error } = await createClient()
     .from("categories")
-    .select("id, name")
+    .select("id, name, parent_id")
     .order("name");
 
   if (error) throw new Error(error.message);
-  return data as Category[];
+  return (data as CategoryRow[]).map(mapCategory);
 }
 
 export async function createProduct(product: ProductInput): Promise<Product> {
@@ -159,12 +175,16 @@ export async function removeBrand(id: string): Promise<void> {
 export async function createCategory(category: Category): Promise<Category> {
   const { data, error } = await createClient()
     .from("categories")
-    .insert(category)
-    .select("id, name")
+    .insert({
+      id: category.id,
+      name: category.name,
+      parent_id: category.parentId,
+    })
+    .select("id, name, parent_id")
     .single();
 
   if (error) throw new Error(error.message);
-  return data as Category;
+  return mapCategory(data as CategoryRow);
 }
 
 export async function renameCategory(id: string, name: string): Promise<void> {

@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  DEFAULT_LANDING_CONTENT,
+  fetchLandingContent,
+} from "./site-content";
 import { useCatalogStore } from "./store/catalog-store";
+import { createClient } from "./supabase/client";
 
 const emptySubscribe = () => () => {};
 
@@ -38,4 +43,43 @@ export function useCatalog() {
     error,
     ready: mounted && hydrated,
   };
+}
+
+export function useLandingContent() {
+  const [content, setContent] = useState(DEFAULT_LANDING_CONTENT);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const load = async () => {
+      try {
+        setContent(await fetchLandingContent());
+      } catch {
+        setContent(DEFAULT_LANDING_CONTENT);
+      } finally {
+        setReady(true);
+      }
+    };
+
+    void load();
+    const channel = supabase
+      .channel("landing-content")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "site_content",
+          filter: "id=eq.landing",
+        },
+        () => void load()
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  return { content, ready, setContent };
 }

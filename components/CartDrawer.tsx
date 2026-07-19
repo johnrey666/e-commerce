@@ -31,65 +31,67 @@ export function CartDrawer() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.3 }}
             onClick={close}
-            className="fixed inset-0 z-50 bg-brand/20 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm"
             aria-hidden
           />
           <motion.aside
             key="drawer"
             role="dialog"
             aria-modal="true"
-            aria-label="Shopping cart"
+            aria-label="Shopping bag"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "spring", stiffness: 380, damping: 36 }}
-            className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-brand/10 bg-white"
+            transition={{ type: "spring", stiffness: 360, damping: 38 }}
+            className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-ink/10 bg-paper"
           >
-            <div className="flex items-center justify-between border-b border-brand/10 px-5 py-4">
-              <h2 className="text-base font-semibold text-brand-dark">
-                Bag{" "}
-                <span className="text-sm font-normal text-brand/45">
+            <div className="flex items-center justify-between border-b border-ink/10 px-7 py-6">
+              <h2 className="text-[11px] font-medium uppercase tracking-[0.35em] text-ink">
+                Your Bag{" "}
+                <span className="text-ink/40">
                   ({items.reduce((n, i) => n + i.quantity, 0)})
                 </span>
               </h2>
               <button
                 onClick={close}
                 aria-label="Close cart"
-                className="grid size-9 place-items-center text-brand/50 transition-colors hover:text-brand"
+                className="grid size-9 place-items-center text-ink/50 transition-colors duration-300 hover:text-ink"
               >
-                <CloseIcon />
+                <CloseIcon strokeWidth={1.5} />
               </button>
             </div>
 
             {items.length === 0 ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-                <p className="text-base font-medium text-brand-dark">
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
+                <p className="font-display text-2xl font-medium text-ink">
                   Your bag is empty
                 </p>
-                <p className="text-sm text-brand/45">
-                  Browse the shop and add something you love.
+                <p className="text-[13px] leading-relaxed text-ink/45">
+                  Every piece is one of one.
+                  <br />
+                  Don&apos;t let a good catch get away.
                 </p>
-                <button onClick={close} className="btn-primary mt-2">
-                  Continue shopping
+                <button onClick={close} className="btn-primary mt-3">
+                  Continue Browsing
                 </button>
               </div>
             ) : (
               <>
-                <ul className="flex-1 divide-y divide-brand/10 overflow-y-auto px-5">
+                <ul className="flex-1 divide-y divide-ink/8 overflow-y-auto px-7">
                   {items.map((item) => (
                     <motion.li
                       key={`${item.productId}-${item.size ?? ""}`}
                       layout
                       initial={{ opacity: 0, x: 8 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="flex gap-4 py-4"
+                      className="flex gap-5 py-6"
                     >
                       <Link
                         href={`/product/${item.productId}`}
                         onClick={close}
-                        className="block h-20 w-16 shrink-0 overflow-hidden rounded-lg bg-brand-soft"
+                        className="block h-24 w-[76px] shrink-0 overflow-hidden bg-brand-soft"
                       >
                         <ProductImage image={item.image} alt={item.name} />
                       </Link>
@@ -98,35 +100,35 @@ export function CartDrawer() {
                           <Link
                             href={`/product/${item.productId}`}
                             onClick={close}
-                            className="text-sm font-medium text-brand-dark hover:text-brand"
+                            className="font-display text-[15px] font-medium leading-snug text-ink transition-colors hover:text-accent"
                           >
                             {item.name}
                           </Link>
                           <button
                             onClick={() => removeItem(item.productId, item.size)}
                             aria-label={`Remove ${item.name}`}
-                            className="text-brand/35 hover:text-brand"
+                            className="text-ink/30 transition-colors hover:text-accent"
                           >
-                            <TrashIcon width={15} height={15} />
+                            <TrashIcon width={14} height={14} strokeWidth={1.5} />
                           </button>
                         </div>
                         {item.size && (
-                          <span className="text-xs text-brand/45">
+                          <span className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-ink/40">
                             Size {item.size}
                           </span>
                         )}
-                        <div className="mt-auto flex items-center justify-between pt-2">
-                          <div className="flex items-center gap-1 rounded-full border border-brand/15 px-1">
+                        <div className="mt-auto flex items-center justify-between pt-3">
+                          <div className="flex items-center gap-1 border border-ink/15 px-1">
                             <button
                               onClick={() =>
                                 setQuantity(item.productId, item.size, item.quantity - 1)
                               }
                               aria-label="Decrease"
-                              className="grid size-7 place-items-center rounded-full text-brand hover:bg-brand-soft"
+                              className="grid size-7 place-items-center text-ink/60 transition-colors hover:text-ink"
                             >
-                              <MinusIcon width={12} height={12} />
+                              <MinusIcon width={11} height={11} strokeWidth={1.5} />
                             </button>
-                            <span className="min-w-4 text-center text-sm">
+                            <span className="min-w-5 text-center text-[12px] text-ink">
                               {item.quantity}
                             </span>
                             <button
@@ -134,12 +136,12 @@ export function CartDrawer() {
                                 setQuantity(item.productId, item.size, item.quantity + 1)
                               }
                               aria-label="Increase"
-                              className="grid size-7 place-items-center rounded-full text-brand hover:bg-brand-soft"
+                              className="grid size-7 place-items-center text-ink/60 transition-colors hover:text-ink"
                             >
-                              <PlusIcon width={12} height={12} />
+                              <PlusIcon width={11} height={11} strokeWidth={1.5} />
                             </button>
                           </div>
-                          <span className="text-sm font-semibold text-brand">
+                          <span className="text-[13px] font-medium tracking-[0.05em] text-ink">
                             {formatPrice(item.unitPrice * item.quantity)}
                           </span>
                         </div>
@@ -148,17 +150,23 @@ export function CartDrawer() {
                   ))}
                 </ul>
 
-                <div className="space-y-3 border-t border-brand/10 p-5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-brand/45">Total</span>
-                    <span className="text-xl font-semibold text-brand-dark">
+                <div className="space-y-4 border-t border-ink/10 p-7">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-ink/45">
+                      Total
+                    </span>
+                    <span className="font-display text-2xl font-medium text-ink">
                       {formatPrice(total)}
                     </span>
                   </div>
-                  <p className="text-xs text-brand/40">
-                    Delivery included · pay via GCash at checkout
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-ink/35">
+                    Complimentary delivery · GCash at checkout
                   </p>
-                  <Link href="/checkout" onClick={close} className="btn-primary block w-full text-center">
+                  <Link
+                    href="/checkout"
+                    onClick={close}
+                    className="btn-primary block w-full text-center"
+                  >
                     Checkout
                   </Link>
                   <Link
@@ -166,7 +174,7 @@ export function CartDrawer() {
                     onClick={close}
                     className="btn-secondary block w-full text-center"
                   >
-                    View bag
+                    View Bag
                   </Link>
                 </div>
               </>

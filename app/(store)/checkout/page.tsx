@@ -12,8 +12,9 @@ import { selectCartTotal, useCartStore } from "@/lib/store/cart-store";
 import { useOrderStore } from "@/lib/store/order-store";
 import type { CheckoutDetails } from "@/lib/types";
 
-const inputClass =
-  "w-full rounded-xl border border-line bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-brand";
+const inputClass = "input-field";
+const labelClass =
+  "mb-2 block text-[10px] font-medium uppercase tracking-[0.25em] text-ink/55";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -49,48 +50,56 @@ export default function CheckoutPage() {
 
   if (mounted && items.length === 0 && !submitting) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-24 text-center sm:px-6">
-        <h1 className="font-display text-2xl font-bold">Your cart is empty</h1>
-        <p className="mt-2 text-muted">Add some finds before checking out.</p>
-        <Link
-          href="/shop"
-          className="mt-6 inline-block rounded-full bg-brand px-8 py-3 font-semibold text-white hover:bg-brand-dark"
-        >
-          Go to shop
+      <div className="mx-auto max-w-2xl px-5 py-32 text-center sm:px-8">
+        <h1 className="font-display text-3xl font-medium text-ink">
+          Your bag is empty
+        </h1>
+        <p className="mt-3 text-[13px] text-ink/50">
+          Add a piece or two before checking out.
+        </p>
+        <Link href="/shop" className="btn-primary mt-8">
+          Explore the Collection
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <motion.h1
+    <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
+      <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="font-display text-3xl font-bold tracking-tight sm:text-4xl"
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="text-center"
       >
-        Checkout
-      </motion.h1>
-      <p className="mt-1 text-sm text-muted">
-        No account needed — fill in your delivery details and we&apos;ll ship your order.
-      </p>
+        <div className="rule-diamond mx-auto max-w-sm">
+          <p className="eyebrow">Almost Yours</p>
+        </div>
+        <h1 className="section-title mt-5">Checkout</h1>
+        <p className="mt-3 text-[13px] text-ink/45">
+          No account needed — fill in your delivery details and we&apos;ll
+          take care of the rest.
+        </p>
+      </motion.div>
 
       <form
         onSubmit={handleSubmit}
-        className="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_380px]"
+        className="mt-12 grid items-start gap-10 lg:grid-cols-[1fr_380px]"
       >
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Contact details */}
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="rounded-3xl bg-white p-6 shadow-card"
+            className="border border-ink/10 bg-surface p-8"
           >
-            <h2 className="mb-4 font-display text-lg font-bold">Your details</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <h2 className="mb-7 text-[11px] font-medium uppercase tracking-[0.35em] text-ink">
+              Delivery Details
+            </h2>
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label htmlFor="firstName" className="mb-1.5 block text-sm font-medium">
+                <label htmlFor="firstName" className={labelClass}>
                   First name *
                 </label>
                 <input
@@ -103,7 +112,7 @@ export default function CheckoutPage() {
                 />
               </div>
               <div>
-                <label htmlFor="lastName" className="mb-1.5 block text-sm font-medium">
+                <label htmlFor="lastName" className={labelClass}>
                   Last name *
                 </label>
                 <input
@@ -116,7 +125,7 @@ export default function CheckoutPage() {
                 />
               </div>
               <div>
-                <label htmlFor="contactNumber" className="mb-1.5 block text-sm font-medium">
+                <label htmlFor="contactNumber" className={labelClass}>
                   Contact number *
                 </label>
                 <input
@@ -131,7 +140,7 @@ export default function CheckoutPage() {
                 />
               </div>
               <div>
-                <label htmlFor="email" className="mb-1.5 block text-sm font-medium">
+                <label htmlFor="email" className={labelClass}>
                   Email *
                 </label>
                 <input
@@ -146,8 +155,8 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <div className="mt-4">
-              <label htmlFor="address" className="mb-1.5 block text-sm font-medium">
+            <div className="mt-5">
+              <label htmlFor="address" className={labelClass}>
                 Address *
               </label>
               <input
@@ -161,23 +170,21 @@ export default function CheckoutPage() {
               />
             </div>
 
-            <div className="mt-4">
-              <span className="mb-1.5 block text-sm font-medium">
-                Pin location{" "}
-                <span className="font-normal text-muted">(optional)</span>
+            <div className="mt-5">
+              <span className={labelClass}>
+                Pin location <span className="normal-case text-ink/35">(optional)</span>
               </span>
               <MapPickerPlaceholder onPin={set("pinnedLocation")} />
               {form.pinnedLocation && (
-                <p className="mt-1.5 text-xs font-medium text-brand">
+                <p className="mt-2 text-[11px] font-medium tracking-[0.05em] text-accent">
                   Pinned: {form.pinnedLocation}
                 </p>
               )}
             </div>
 
-            <div className="mt-4">
-              <label htmlFor="notes" className="mb-1.5 block text-sm font-medium">
-                Other details{" "}
-                <span className="font-normal text-muted">(optional)</span>
+            <div className="mt-5">
+              <label htmlFor="notes" className={labelClass}>
+                Other details <span className="normal-case text-ink/35">(optional)</span>
               </label>
               <textarea
                 id="notes"
@@ -195,33 +202,35 @@ export default function CheckoutPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-3xl bg-white p-6 shadow-card"
+            className="border border-ink/10 bg-surface p-8"
           >
-            <h2 className="font-display text-lg font-bold">Pay via GCash</h2>
-            <p className="mt-1 text-sm text-muted">
+            <h2 className="text-[11px] font-medium uppercase tracking-[0.35em] text-ink">
+              Payment via GCash
+            </h2>
+            <p className="mt-3 text-[13px] leading-relaxed text-ink/50">
               Scan the QR with your GCash app, then enter the reference number
               below. (Placeholder — real GCash integration coming soon.)
             </p>
-            <div className="mt-4 flex flex-col items-start gap-5 sm:flex-row">
+            <div className="mt-6 flex flex-col items-start gap-6 sm:flex-row">
               <div
                 role="img"
                 aria-label="GCash QR code placeholder"
-                className="grid size-40 shrink-0 place-items-center rounded-2xl border-2 border-dashed border-line bg-cream"
+                className="grid size-40 shrink-0 place-items-center border border-dashed border-ink/20 bg-cream"
               >
                 <div className="text-center">
                   <div
-                    className="mx-auto mb-2 size-20 rounded-lg bg-[repeating-linear-gradient(0deg,#1f2328_0_4px,transparent_4px_8px),repeating-linear-gradient(90deg,#1f2328_0_4px,transparent_4px_8px)] opacity-20"
+                    className="mx-auto mb-2 size-20 bg-[repeating-linear-gradient(0deg,#1c1b1a_0_4px,transparent_4px_8px),repeating-linear-gradient(90deg,#1c1b1a_0_4px,transparent_4px_8px)] opacity-15"
                     aria-hidden
                   />
-                  <span className="text-xs font-medium text-muted">
-                    GCash QR placeholder
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-ink/40">
+                    GCash QR
                   </span>
                 </div>
               </div>
               <div className="w-full">
-                <label htmlFor="gcashReference" className="mb-1.5 block text-sm font-medium">
-                  GCash reference number{" "}
-                  <span className="font-normal text-muted">(optional for now)</span>
+                <label htmlFor="gcashReference" className={labelClass}>
+                  GCash reference{" "}
+                  <span className="normal-case text-ink/35">(optional for now)</span>
                 </label>
                 <input
                   id="gcashReference"
@@ -230,7 +239,7 @@ export default function CheckoutPage() {
                   onChange={(e) => set("gcashReference")(e.target.value)}
                   className={inputClass}
                 />
-                <p className="mt-2 text-xs text-muted">
+                <p className="mt-3 text-[11px] leading-relaxed text-ink/40">
                   You can also pay in cash when you pick up your order.
                 </p>
               </div>
@@ -243,49 +252,55 @@ export default function CheckoutPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="rounded-3xl bg-white p-6 shadow-card lg:sticky lg:top-24"
+          className="border border-ink/10 bg-surface p-8 lg:sticky lg:top-32"
         >
-          <h2 className="mb-4 font-display text-lg font-bold">Order summary</h2>
-          <ul className="max-h-72 divide-y divide-line overflow-y-auto">
+          <h2 className="mb-6 text-[11px] font-medium uppercase tracking-[0.35em] text-ink">
+            Order Summary
+          </h2>
+          <ul className="max-h-72 divide-y divide-ink/8 overflow-y-auto">
             {(mounted ? items : []).map((item) => (
               <li
                 key={`${item.productId}-${item.size ?? ""}`}
-                className="flex items-center gap-3 py-3"
+                className="flex items-center gap-4 py-4"
               >
-                <div className="h-14 w-12 shrink-0 overflow-hidden rounded-lg">
+                <div className="h-16 w-[52px] shrink-0 overflow-hidden bg-brand-soft">
                   <ProductImage image={item.image} alt={item.name} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{item.name}</p>
-                  <p className="text-xs text-muted">
+                  <p className="truncate text-[13px] font-medium text-ink">
+                    {item.name}
+                  </p>
+                  <p className="mt-0.5 text-[10px] uppercase tracking-[0.15em] text-ink/40">
                     {item.size ? `Size ${item.size} · ` : ""}Qty {item.quantity}
                   </p>
                 </div>
-                <span className="text-sm font-semibold">
+                <span className="text-[13px] font-medium text-ink">
                   {formatPrice(item.unitPrice * item.quantity)}
                 </span>
               </li>
             ))}
           </ul>
-          <div className="mt-4 border-t border-line pt-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted">Total</span>
-              <span className="font-display text-2xl font-bold">
+          <div className="mt-5 border-t border-ink/10 pt-5">
+            <div className="flex items-baseline justify-between">
+              <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-ink/45">
+                Total
+              </span>
+              <span className="font-display text-3xl font-medium text-ink">
                 {formatPrice(mounted ? total : 0)}
               </span>
             </div>
-            <p className="mt-1 text-xs text-brand/40">Delivery · pay via GCash</p>
+            <p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-ink/35">
+              Complimentary delivery · GCash
+            </p>
           </div>
-          <motion.button
+          <button
             type="submit"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
             disabled={submitting}
-            className="mt-5 w-full rounded-full bg-brand py-4 font-semibold text-white transition-colors hover:bg-brand-dark disabled:opacity-60"
+            className="btn-primary mt-7 w-full disabled:opacity-50"
           >
-            {submitting ? "Placing order…" : "Place order"}
-          </motion.button>
-          <p className="mt-3 text-center text-xs text-muted">
+            {submitting ? "Placing Order…" : "Place Order"}
+          </button>
+          <p className="mt-4 text-center text-[11px] leading-relaxed text-ink/40">
             By placing an order you agree to pick it up within 7 days.
           </p>
         </motion.aside>

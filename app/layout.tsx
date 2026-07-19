@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,13 +7,20 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
   title: {
-    default: "Good Catch — Thrifted Apparel",
+    default: "Good Catch — Curated Vintage Apparel",
     template: "%s | Good Catch",
   },
   description:
-    "Good Catch — curated thrifted apparel. Shop online, pay via GCash, delivered to your door.",
+    "Good Catch — a curated atelier of rare, one-of-one vintage apparel. Order online, pay via GCash, delivered to your door.",
 };
 
 export default function RootLayout({
@@ -22,8 +29,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-white">{children}</body>
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      className={`${inter.variable} ${cormorant.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col bg-paper">{children}</body>
     </html>
   );
 }

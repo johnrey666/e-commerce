@@ -11,7 +11,7 @@ const STATUSES: OrderStatus[] = ["Pending", "Out for Delivery", "Delivered"];
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
   Pending: "bg-brand-soft text-brand",
-  "Out for Delivery": "bg-brand/15 text-brand-dark",
+  "Out for Delivery": "bg-ink/8 text-ink",
   Delivered: "bg-brand text-white",
 };
 
@@ -29,22 +29,23 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-        Orders{" "}
-        <span className="text-base font-medium text-muted">
-          ({mounted ? orders.length : "…"})
+      <p className="eyebrow">The Ledger</p>
+      <h1 className="mt-3 font-display text-[2rem] font-medium leading-[1.1] tracking-[-0.01em] text-ink sm:text-[2.6rem]">
+        Orders
+        <span className="ml-3 align-middle text-base font-normal text-ink/40">
+          {mounted ? orders.length : "…"}
         </span>
       </h1>
 
-      <div className="mt-5 flex flex-wrap gap-2">
+      <div className="mt-8 flex flex-wrap gap-2">
         {(["All", ...STATUSES] as const).map((s) => (
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            className={`px-5 py-2.5 text-[10px] font-medium uppercase tracking-[0.24em] transition-all duration-300 ${
               statusFilter === s
-                ? "bg-brand text-white"
-                : "bg-white text-muted shadow-card hover:text-ink"
+                ? "bg-ink text-white"
+                : "border border-ink/15 text-ink/50 hover:border-ink hover:text-ink"
             }`}
           >
             {s}
@@ -53,40 +54,45 @@ export default function AdminOrdersPage() {
       </div>
 
       {mounted && filtered.length === 0 ? (
-        <div className="mt-8 rounded-3xl bg-white py-16 text-center shadow-card">
-          <p className="font-display text-lg font-bold">No orders here</p>
-          <p className="mt-1 text-sm text-muted">
+        <div className="mt-10 border border-ink/10 bg-surface px-6 py-20 text-center">
+          <p className="eyebrow">Quiet For Now</p>
+          <p className="mt-4 font-display text-2xl font-medium text-ink">
+            No orders here
+          </p>
+          <p className="mx-auto mt-3 max-w-sm text-[13px] leading-relaxed text-ink/45">
             Orders placed through checkout will show up in this list.
           </p>
         </div>
       ) : (
-        <ul className="mt-6 space-y-4">
+        <ul className="mt-8 space-y-5">
           {(mounted ? filtered : []).map((order) => {
             const expanded = expandedId === order.id;
             return (
               <li
                 key={order.id}
-                className="overflow-hidden rounded-3xl bg-white shadow-card"
+                className="overflow-hidden border border-ink/10 bg-surface"
               >
                 <button
                   onClick={() => setExpandedId(expanded ? null : order.id)}
                   aria-expanded={expanded}
-                  className="flex w-full flex-wrap items-center justify-between gap-3 px-6 py-4 text-left"
+                  className="flex w-full flex-wrap items-center justify-between gap-3 px-6 py-5 text-left transition-colors hover:bg-brand-faint sm:px-7"
                 >
                   <div>
-                    <p className="font-display font-bold">{order.id}</p>
-                    <p className="text-sm text-muted">
+                    <p className="font-display text-lg font-medium text-ink">
+                      {order.id}
+                    </p>
+                    <p className="mt-0.5 text-[12px] text-ink/45">
                       {order.customer.firstName} {order.customer.lastName} ·{" "}
                       {new Date(order.createdAt).toLocaleString()}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-4">
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[order.status]}`}
+                      className={`px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.25em] ${STATUS_STYLES[order.status]}`}
                     >
                       {order.status}
                     </span>
-                    <span className="font-display text-lg font-bold">
+                    <span className="font-display text-xl font-medium text-ink">
                       {formatPrice(order.total)}
                     </span>
                   </div>
@@ -101,67 +107,69 @@ export default function AdminOrdersPage() {
                       transition={{ duration: 0.25 }}
                       className="overflow-hidden"
                     >
-                      <div className="grid gap-6 border-t border-line px-6 py-5 md:grid-cols-2">
+                      <div className="grid gap-8 border-t border-ink/10 px-6 py-6 sm:px-7 md:grid-cols-2">
                         <div>
-                          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+                          <h3 className="mb-3 text-[9px] font-medium uppercase tracking-[0.3em] text-ink/45">
                             Items
                           </h3>
-                          <ul className="space-y-1.5 text-sm">
+                          <ul className="space-y-2 text-sm">
                             {order.items.map((item) => (
                               <li
                                 key={`${item.productId}-${item.size ?? ""}`}
                                 className="flex justify-between"
                               >
-                                <span>
+                                <span className="text-ink/70">
                                   {item.name}
                                   {item.size ? ` (${item.size})` : ""} ×{" "}
                                   {item.quantity}
                                 </span>
-                                <span className="font-medium">
+                                <span className="font-medium text-ink">
                                   {formatPrice(item.unitPrice * item.quantity)}
                                 </span>
                               </li>
                             ))}
                           </ul>
                         </div>
-                        <div className="space-y-2 text-sm">
-                          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                        <div className="space-y-2 text-sm text-ink/70">
+                          <h3 className="text-[9px] font-medium uppercase tracking-[0.3em] text-ink/45">
                             Customer
                           </h3>
                           <p>{order.customer.contactNumber}</p>
                           <p>{order.customer.email}</p>
                           <p>{order.customer.address}</p>
                           {order.customer.pinnedLocation && (
-                            <p className="text-muted">
+                            <p className="text-ink/45">
                               Pinned: {order.customer.pinnedLocation}
                             </p>
                           )}
                           {order.customer.notes && (
-                            <p className="text-muted">
+                            <p className="text-ink/45">
                               Notes: {order.customer.notes}
                             </p>
                           )}
                           {order.customer.gcashReference && (
                             <p>
                               GCash ref:{" "}
-                              <strong>{order.customer.gcashReference}</strong>
+                              <strong className="text-ink">
+                                {order.customer.gcashReference}
+                              </strong>
                             </p>
                           )}
                         </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 border-t border-line px-6 py-4">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-muted">
-                          Set status:
+                      <div className="flex flex-wrap items-center gap-2.5 border-t border-ink/10 px-6 py-5 sm:px-7">
+                        <span className="mr-2 text-[9px] font-medium uppercase tracking-[0.3em] text-ink/45">
+                          Set Status
                         </span>
                         {STATUSES.map((s) => (
                           <button
                             key={s}
                             onClick={() => updateStatus(order.id, s)}
                             disabled={order.status === s}
-                            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
+                            className={`px-4 py-2 text-[9px] font-medium uppercase tracking-[0.22em] transition-all duration-300 ${
                               order.status === s
                                 ? `${STATUS_STYLES[s]} cursor-default`
-                                : "border border-line text-muted hover:border-brand hover:text-brand"
+                                : "border border-ink/15 text-ink/50 hover:border-ink hover:text-ink"
                             }`}
                           >
                             {s}

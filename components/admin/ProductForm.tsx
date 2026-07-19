@@ -22,8 +22,8 @@ const PLACEHOLDER_HUES = [
   "orange", "amber", "yellow", "lime", "emerald", "teal", "blue", "indigo",
 ];
 
-const inputClass =
-  "w-full rounded-xl border border-line bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-brand";
+const labelClass =
+  "mb-2 block text-[10px] font-medium uppercase tracking-[0.24em] text-ink/55";
 
 interface FormState {
   name: string;
@@ -106,16 +106,23 @@ export function ProductForm({ product }: { product?: Product }) {
   };
 
   if (!ready) {
-    return <p className="py-12 text-center text-sm text-muted">Loading…</p>;
+    return (
+      <p className="py-12 text-center text-[10px] font-medium uppercase tracking-[0.4em] text-ink/40">
+        Loading
+      </p>
+    );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
-      <section className="rounded-3xl bg-white p-6 shadow-card">
-        <h2 className="mb-4 font-display text-lg font-bold">Basics</h2>
-        <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="max-w-3xl space-y-8">
+      <section className="border border-ink/10 bg-surface p-7 sm:p-8">
+        <p className="eyebrow">01</p>
+        <h2 className="mb-6 mt-2 font-display text-xl font-medium text-ink">
+          Basics
+        </h2>
+        <div className="space-y-5">
           <div>
-            <label htmlFor="name" className="mb-1.5 block text-sm font-medium">
+            <label htmlFor="name" className={labelClass}>
               Name *
             </label>
             <input
@@ -123,11 +130,11 @@ export function ProductForm({ product }: { product?: Product }) {
               required
               value={form.name}
               onChange={(e) => set("name", e.target.value)}
-              className={inputClass}
+              className="input-field"
             />
           </div>
           <div>
-            <label htmlFor="description" className="mb-1.5 block text-sm font-medium">
+            <label htmlFor="description" className={labelClass}>
               Description *
             </label>
             <textarea
@@ -136,12 +143,12 @@ export function ProductForm({ product }: { product?: Product }) {
               rows={4}
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
-              className={inputClass}
+              className="input-field"
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-3">
             <div>
-              <label htmlFor="categoryId" className="mb-1.5 block text-sm font-medium">
+              <label htmlFor="categoryId" className={labelClass}>
                 Category *
               </label>
               <select
@@ -149,7 +156,7 @@ export function ProductForm({ product }: { product?: Product }) {
                 required
                 value={form.categoryId}
                 onChange={(e) => set("categoryId", e.target.value)}
-                className={inputClass}
+                className="input-field"
               >
                 <option value="" disabled>
                   Select…
@@ -162,7 +169,7 @@ export function ProductForm({ product }: { product?: Product }) {
               </select>
             </div>
             <div>
-              <label htmlFor="brandId" className="mb-1.5 block text-sm font-medium">
+              <label htmlFor="brandId" className={labelClass}>
                 Brand *
               </label>
               <select
@@ -170,7 +177,7 @@ export function ProductForm({ product }: { product?: Product }) {
                 required
                 value={form.brandId}
                 onChange={(e) => set("brandId", e.target.value)}
-                className={inputClass}
+                className="input-field"
               >
                 <option value="" disabled>
                   Select…
@@ -183,14 +190,14 @@ export function ProductForm({ product }: { product?: Product }) {
               </select>
             </div>
             <div>
-              <label htmlFor="condition" className="mb-1.5 block text-sm font-medium">
+              <label htmlFor="condition" className={labelClass}>
                 Condition *
               </label>
               <select
                 id="condition"
                 value={form.condition}
                 onChange={(e) => set("condition", e.target.value as ProductCondition)}
-                className={inputClass}
+                className="input-field"
               >
                 {CONDITIONS.map((c) => (
                   <option key={c} value={c}>
@@ -203,11 +210,14 @@ export function ProductForm({ product }: { product?: Product }) {
         </div>
       </section>
 
-      <section className="rounded-3xl bg-white p-6 shadow-card">
-        <h2 className="mb-4 font-display text-lg font-bold">Pricing & stock</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
+      <section className="border border-ink/10 bg-surface p-7 sm:p-8">
+        <p className="eyebrow">02</p>
+        <h2 className="mb-6 mt-2 font-display text-xl font-medium text-ink">
+          Pricing &amp; Stock
+        </h2>
+        <div className="grid gap-5 sm:grid-cols-3">
           <div>
-            <label htmlFor="price" className="mb-1.5 block text-sm font-medium">
+            <label htmlFor="price" className={labelClass}>
               Price (₱) *
             </label>
             <input
@@ -218,11 +228,11 @@ export function ProductForm({ product }: { product?: Product }) {
               step={1}
               value={form.price}
               onChange={(e) => set("price", e.target.value)}
-              className={inputClass}
+              className="input-field"
             />
           </div>
           <div>
-            <label htmlFor="discountPrice" className="mb-1.5 block text-sm font-medium">
+            <label htmlFor="discountPrice" className={labelClass}>
               Discount price (₱)
             </label>
             <input
@@ -232,11 +242,11 @@ export function ProductForm({ product }: { product?: Product }) {
               step={1}
               value={form.discountPrice}
               onChange={(e) => set("discountPrice", e.target.value)}
-              className={inputClass}
+              className="input-field"
             />
           </div>
           <div>
-            <label htmlFor="stock" className="mb-1.5 block text-sm font-medium">
+            <label htmlFor="stock" className={labelClass}>
               Stock *
             </label>
             <input
@@ -247,44 +257,47 @@ export function ProductForm({ product }: { product?: Product }) {
               step={1}
               value={form.stock}
               onChange={(e) => set("stock", e.target.value)}
-              className={inputClass}
+              className="input-field"
             />
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap gap-5">
-          <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium">
+        <div className="mt-6 flex flex-wrap gap-6">
+          <label className="flex cursor-pointer items-center gap-2.5 text-[13px] font-medium text-ink/70">
             <input
               type="checkbox"
               checked={form.onSale}
               onChange={(e) => set("onSale", e.target.checked)}
-              className="size-4 rounded accent-[#e63946]"
+              className="size-4 accent-[#c1121f]"
             />
             Feature under &quot;On Sale&quot;
           </label>
-          <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium">
+          <label className="flex cursor-pointer items-center gap-2.5 text-[13px] font-medium text-ink/70">
             <input
               type="checkbox"
               checked={form.isNewArrival}
               onChange={(e) => set("isNewArrival", e.target.checked)}
-              className="size-4 rounded accent-[#e63946]"
+              className="size-4 accent-[#c1121f]"
             />
             New Arrival
           </label>
         </div>
         {form.onSale && !form.discountPrice && (
-          <p className="mt-3 text-xs text-brand">
+          <p className="mt-4 text-xs text-brand">
             Tip: set a discount price so the sale badge shows a percentage.
           </p>
         )}
       </section>
 
-      <section className="rounded-3xl bg-white p-6 shadow-card">
-        <h2 className="font-display text-lg font-bold">Images</h2>
-        <p className="mt-1 text-sm text-muted">
-          Upload placeholder — pick one or more placeholder swatches for now.
-          Real image upload plugs in with the backend.
+      <section className="border border-ink/10 bg-surface p-7 sm:p-8">
+        <p className="eyebrow">03</p>
+        <h2 className="mt-2 font-display text-xl font-medium text-ink">
+          Images
+        </h2>
+        <p className="mt-2 text-[13px] leading-relaxed text-ink/45">
+          Pick one or more placeholder swatches for now — real image upload
+          plugs in with the Supabase backend.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-5 flex flex-wrap gap-2">
           {PLACEHOLDER_HUES.map((hue) => {
             const selected = form.images.includes(`placeholder:${hue}`);
             return (
@@ -294,7 +307,7 @@ export function ProductForm({ product }: { product?: Product }) {
                 onClick={() => toggleImage(hue)}
                 aria-pressed={selected}
                 aria-label={`${hue} placeholder image`}
-                className={`h-14 w-11 overflow-hidden rounded-lg border-2 transition-all ${
+                className={`h-14 w-11 overflow-hidden border-2 transition-all ${
                   selected ? "scale-105 border-brand" : "border-transparent"
                 }`}
               >
@@ -305,48 +318,54 @@ export function ProductForm({ product }: { product?: Product }) {
         </div>
       </section>
 
-      <section className="rounded-3xl bg-white p-6 shadow-card">
-        <h2 className="mb-4 font-display text-lg font-bold">Variants & tags</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <section className="border border-ink/10 bg-surface p-7 sm:p-8">
+        <p className="eyebrow">04</p>
+        <h2 className="mb-6 mt-2 font-display text-xl font-medium text-ink">
+          Variants &amp; Tags
+        </h2>
+        <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <label htmlFor="sizes" className="mb-1.5 block text-sm font-medium">
-              Sizes <span className="font-normal text-muted">(comma-separated)</span>
+            <label htmlFor="sizes" className={labelClass}>
+              Sizes{" "}
+              <span className="normal-case tracking-normal text-ink/35">
+                (comma-separated)
+              </span>
             </label>
             <input
               id="sizes"
               placeholder="S, M, L"
               value={form.sizes}
               onChange={(e) => set("sizes", e.target.value)}
-              className={inputClass}
+              className="input-field"
             />
           </div>
           <div>
-            <label htmlFor="tags" className="mb-1.5 block text-sm font-medium">
-              Tags <span className="font-normal text-muted">(comma-separated)</span>
+            <label htmlFor="tags" className={labelClass}>
+              Tags{" "}
+              <span className="normal-case tracking-normal text-ink/35">
+                (comma-separated)
+              </span>
             </label>
             <input
               id="tags"
               placeholder="vintage, streetwear"
               value={form.tags}
               onChange={(e) => set("tags", e.target.value)}
-              className={inputClass}
+              className="input-field"
             />
           </div>
         </div>
       </section>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-4">
         <motion.button
           type="submit"
-          whileTap={{ scale: 0.97 }}
-          className="rounded-full bg-brand px-8 py-3 font-semibold text-white transition-colors hover:bg-brand-dark"
+          whileTap={{ scale: 0.98 }}
+          className="btn-primary"
         >
-          {product ? "Save changes" : "Add product"}
+          {product ? "Save Changes" : "Add Product"}
         </motion.button>
-        <Link
-          href="/admin/products"
-          className="rounded-full border border-line px-8 py-3 font-semibold transition-colors hover:border-ink"
-        >
+        <Link href="/admin/products" className="btn-secondary !border-ink/20 !text-ink/60 hover:!border-ink hover:!bg-ink">
           Cancel
         </Link>
       </div>

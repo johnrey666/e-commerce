@@ -11,12 +11,17 @@ export default function AdminCategoriesPage() {
   const deleteCategory = useCatalogStore((s) => s.deleteCategory);
 
   if (!ready) {
-    return <p className="py-12 text-center text-sm text-muted">Loading…</p>;
+    return (
+      <p className="py-12 text-center text-[10px] font-medium uppercase tracking-[0.4em] text-ink/40">
+        Loading
+      </p>
+    );
   }
 
   return (
     <NamedListManager
       title="Categories"
+      eyebrow="Departments"
       description="Categories power the shop filters and homepage shortcuts."
       items={categories}
       usageCount={(id) => products.filter((p) => p.categoryId === id).length}

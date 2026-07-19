@@ -13,12 +13,21 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### Admin access
+### Admin access (Supabase Auth)
 
-Go to `/admin/login` and use the placeholder credentials:
+1. Create a project at [supabase.com](https://supabase.com).
+2. Copy **Project URL** and **anon / publishable key** from **Project Settings → API** into `.env.local`:
 
-- Email: `admin@goodcatch.shop`
-- Password: `goodcatch123`
+```bash
+cp .env.example .env.local
+# then paste your keys
+```
+
+3. In the Supabase dashboard, open **SQL → New query**, paste and run `supabase/schema.sql`.
+4. For local testing, go to **Authentication → Providers → Email** and turn **off** “Confirm email” so signup logs you in immediately.
+5. Restart `npm run dev`, open `/admin/login`, and use **Sign up** to create your first admin, then **Sign in**.
+
+Products / orders still use local Zustand stores for now — Auth is the first Supabase connection.
 
 ## Pages
 
@@ -30,7 +39,7 @@ Go to `/admin/login` and use the placeholder credentials:
 | `/cart` | Cart page (a slide-in cart drawer is also available everywhere) |
 | `/checkout` | Guest checkout — details, pin-location placeholder, GCash placeholder |
 | `/order-confirmation` | Post-checkout confirmation |
-| `/admin/login` | Admin login (placeholder auth) |
+| `/admin/login` | Admin login / sign up (Supabase Auth) |
 | `/admin` | Protected dashboard with stats |
 | `/admin/products` (+ `new`, `[id]/edit`) | Product CRUD incl. discounts, flags, placeholder images |
 | `/admin/brands`, `/admin/categories` | Manage brands/categories (feed the shop filters) |
@@ -46,5 +55,7 @@ Go to `/admin/login` and use the placeholder credentials:
   - `components/ProductImage.tsx` — supports real image URLs already; `placeholder:<hue>` refs render styled boxes.
   - `components/home/HeroVisual.tsx` — slot for a Spline embed or React Three Fiber canvas.
   - `components/MapPickerPlaceholder.tsx` — slot for Leaflet / Google Maps.
-  - `lib/store/auth-store.ts` — slot for NextAuth / Firebase Auth.
+  - `lib/store/auth-store.ts` — Supabase Auth (admin login / signup / session).
+  - `lib/supabase/` — browser + server clients; `proxy.ts` refreshes sessions.
+  - `supabase/schema.sql` — `profiles` table + signup trigger for admins.
   - GCash section in `app/(store)/checkout/page.tsx` — slot for the real payment API.

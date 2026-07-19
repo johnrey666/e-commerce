@@ -5,8 +5,9 @@ import { ProductForm } from "@/components/admin/ProductForm";
 export default function NewProductPage() {
   return (
     <div>
-      <h1 className="mb-6 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-        Add product
+      <p className="eyebrow">New Piece</p>
+      <h1 className="mb-8 mt-3 font-display text-[2rem] font-medium leading-[1.1] tracking-[-0.01em] text-ink sm:text-[2.6rem]">
+        Add Product
       </h1>
       <ProductForm />
     </div>

@@ -27,113 +27,139 @@ export default function HomePage() {
   const { products, brands, categories, ready } = useCatalog();
 
   return (
-    <div className="bg-white">
-      {/* Hero */}
-      <section className="mx-auto max-w-7xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
-          <div className="order-2 lg:order-1">
-            <motion.p {...fadeUp} className="eyebrow">
-              Thrifted · delivered
-            </motion.p>
+    <div className="bg-paper">
+      {/* ——— Hero — full-bleed video ——— */}
+      <section className="relative overflow-hidden bg-ink">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover"
+          src="/sample.mp4"
+        />
+        {/* Legibility veil */}
+        <div className="absolute inset-0 bg-gradient-to-b from-ink/55 via-ink/35 to-ink/60" />
 
-            <motion.h1
-              {...fadeUp}
-              transition={{ ...fadeUp.transition, delay: 0.05 }}
-              className="mt-4 text-[2.5rem] font-semibold leading-[1.08] tracking-[-0.03em] text-brand-dark sm:text-5xl lg:text-[3.5rem]"
-            >
-              Curated secondhand,
-              <br />
-              <span className="text-brand">delivered.</span>
-            </motion.h1>
+        <div className="relative z-10 mx-auto flex h-[82svh] max-w-3xl flex-col items-center justify-center px-6 text-center sm:h-[72vh] lg:h-[82vh]">
+          <motion.p
+            {...fadeUp}
+            className="text-[10px] font-medium uppercase tracking-[0.4em] text-white/65"
+          >
+            Est. Manila · One of One
+          </motion.p>
 
-            <motion.p
-              {...fadeUp}
-              transition={{ ...fadeUp.transition, delay: 0.1 }}
-              className="mt-5 max-w-sm text-[15px] leading-relaxed text-brand/45"
-            >
-              One-of-one shirts, pants, hoodies and more. Order online, pay
-              via GCash, delivered to your door.
-            </motion.p>
+          <motion.h1
+            {...fadeUp}
+            transition={{ ...fadeUp.transition, delay: 0.08 }}
+            className="mt-7 font-display text-[3rem] font-medium leading-[1.05] tracking-[-0.01em] text-white sm:text-[4.25rem] lg:text-[5rem]"
+          >
+            Rare pieces,
+            <br />
+            <em className="font-normal italic text-white/85">
+              quietly curated.
+            </em>
+          </motion.h1>
 
-            <motion.div
-              {...fadeUp}
-              transition={{ ...fadeUp.transition, delay: 0.15 }}
-              className="mt-9 flex flex-wrap gap-3"
-            >
-              <Link href="/shop" className="btn-primary">
-                Shop now
-              </Link>
-              <Link href="/shop?section=new-arrivals" className="btn-secondary">
-                New arrivals
-              </Link>
-            </motion.div>
-          </div>
+          <motion.p
+            {...fadeUp}
+            transition={{ ...fadeUp.transition, delay: 0.16 }}
+            className="mx-auto mt-7 max-w-md text-[14px] leading-relaxed tracking-[0.02em] text-white/70"
+          >
+            A private edit of vintage apparel — each piece hand-selected,
+            authenticated, and delivered to your door. When it&apos;s gone,
+            it&apos;s gone.
+          </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-            className="order-1 lg:order-2"
+            {...fadeUp}
+            transition={{ ...fadeUp.transition, delay: 0.24 }}
+            className="mt-10 flex w-full max-w-xs flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:justify-center sm:gap-4"
           >
-            <HeroGallery />
+            <Link
+              href="/shop"
+              className="inline-flex w-full items-center justify-center bg-white px-10 py-4 text-[11px] font-medium uppercase tracking-[0.28em] text-ink transition-all duration-500 ease-out hover:bg-brand hover:text-white active:scale-[0.99] sm:w-auto"
+            >
+              Explore the Collection
+            </Link>
+            <Link
+              href="/shop?section=new-arrivals"
+              className="inline-flex w-full items-center justify-center border border-white/50 px-10 py-4 text-[11px] font-medium uppercase tracking-[0.28em] text-white transition-all duration-500 ease-out hover:border-white hover:bg-white hover:text-ink active:scale-[0.99] sm:w-auto"
+            >
+              New Arrivals
+            </Link>
           </motion.div>
         </div>
-
-        {ready && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.45 }}
-            className="mt-12 border-t border-brand/8 pt-8"
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <p className="eyebrow">Featured</p>
-              <Link href="/shop?section=new-arrivals" className="btn-ghost text-xs">
-                See all →
-              </Link>
-            </div>
-            <HeroShowcase products={products} />
-          </motion.div>
-        )}
       </section>
 
-      {/* Categories */}
-      <section className="border-t border-brand/8 py-14 sm:py-16">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+      {/* ——— Maisons strip ——— */}
+      <section className="mx-auto mt-20 max-w-[90rem] px-5 sm:mt-28 sm:px-10">
+        <HeroGallery />
+      </section>
+
+      {/* ——— Featured ——— */}
+      {ready && (
+        <section className="mx-auto max-w-[90rem] px-5 py-20 sm:px-10 sm:py-28">
           <Reveal>
-            <div className="mb-10 flex items-end justify-between">
+            <div className="mb-12 text-center">
+              <div className="rule-diamond mx-auto max-w-sm">
+                <p className="eyebrow">The Edit</p>
+              </div>
+              <h2 className="section-title mt-5">This Week&apos;s Selection</h2>
+            </div>
+          </Reveal>
+          <HeroShowcase products={products} />
+          <Reveal>
+            <div className="mt-12 text-center">
+              <Link href="/shop?section=new-arrivals" className="btn-secondary">
+                View All Pieces
+              </Link>
+            </div>
+          </Reveal>
+        </section>
+      )}
+
+      {/* ——— Categories ——— */}
+      <section className="border-t border-ink/8 py-20 sm:py-28">
+        <div className="mx-auto max-w-[90rem] px-5 sm:px-10">
+          <Reveal>
+            <div className="mb-12 flex items-end justify-between">
               <div>
-                <p className="eyebrow">Categories</p>
-                <h2 className="section-title mt-2">Shop by type</h2>
+                <p className="eyebrow">Departments</p>
+                <h2 className="section-title mt-4">Shop by Category</h2>
               </div>
               <Link href="/shop" className="btn-ghost hidden sm:inline-flex">
-                View all →
+                View All
               </Link>
             </div>
           </Reveal>
 
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-5 md:gap-3">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5 md:gap-5">
             {(ready ? categories : []).map((cat, i) => {
               const count = products.filter((p) => p.categoryId === cat.id).length;
               const img = scatteredSample(i + 3);
               return (
-                <Reveal key={cat.id} delay={i * 0.04}>
+                <Reveal key={cat.id} delay={i * 0.05}>
                   <Link
                     href={`/shop?category=${cat.id}`}
-                    className="group relative aspect-[4/5] overflow-hidden rounded-xl border border-brand/8 bg-brand-soft"
+                    className="group relative block aspect-[4/5] overflow-hidden bg-brand-soft"
                   >
                     <Image
                       src={img}
                       alt=""
                       fill
-                      sizes="200px"
-                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      sizes="220px"
+                      className="object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/75 via-brand-dark/10 to-transparent transition-opacity duration-300 group-hover:from-brand-dark/85" />
-                    <div className="absolute inset-x-0 bottom-0 p-4">
-                      <p className="text-sm font-semibold text-white">{cat.name}</p>
-                      <p className="mt-0.5 text-[11px] text-white/65">
-                        {count} items
+                    <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/5 to-transparent transition-opacity duration-500 group-hover:from-ink/80" />
+                    <div className="absolute inset-x-0 bottom-0 p-5 text-center">
+                      <p className="font-display text-lg font-medium text-paper">
+                        {cat.name}
+                      </p>
+                      <p className="mt-1 text-[9px] font-medium uppercase tracking-[0.3em] text-paper/60">
+                        {count} {count === 1 ? "piece" : "pieces"}
                       </p>
                     </div>
                   </Link>
@@ -144,6 +170,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ——— Curated carousels ——— */}
       {ready &&
         curatedSections.map((section) => (
           <ProductCarousel
@@ -156,21 +183,25 @@ export default function HomePage() {
           />
         ))}
 
+      {/* ——— Brand index ——— */}
       {ready && brands.length > 0 && (
-        <section className="border-t border-brand/8 py-14">
-          <div className="mx-auto max-w-7xl px-5 sm:px-8">
+        <section className="border-t border-ink/8 py-20 sm:py-28">
+          <div className="mx-auto max-w-[90rem] px-5 text-center sm:px-10">
             <Reveal>
-              <p className="eyebrow">Brands</p>
-              <h2 className="section-title mt-2">On the rack</h2>
+              <div className="rule-diamond mx-auto max-w-sm">
+                <p className="eyebrow">The Index</p>
+              </div>
+              <h2 className="section-title mt-5">Houses on the Rack</h2>
             </Reveal>
-            <div className="mt-7 flex flex-wrap gap-2">
+            <div className="mx-auto mt-12 flex max-w-3xl flex-wrap justify-center gap-x-10 gap-y-5">
               {brands.map((b, i) => (
-                <Reveal key={b.id} delay={i * 0.03}>
+                <Reveal key={b.id} delay={i * 0.04}>
                   <Link
                     href={`/shop?brand=${b.id}`}
-                    className="rounded-full border border-brand/12 px-5 py-2 text-[13px] font-medium text-brand/55 transition-all duration-200 hover:border-brand hover:text-brand"
+                    className="group relative font-display text-xl font-medium text-ink/55 transition-colors duration-300 hover:text-ink sm:text-2xl"
                   >
                     {b.name}
+                    <span className="absolute -bottom-1 left-0 h-px w-0 bg-ink transition-all duration-500 group-hover:w-full" />
                   </Link>
                 </Reveal>
               ))}
@@ -178,6 +209,29 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      {/* ——— Manifesto ——— */}
+      <section className="border-t border-ink/8 bg-ink py-24 sm:py-32">
+        <div className="mx-auto max-w-2xl px-5 text-center sm:px-10">
+          <Reveal>
+            <p className="text-[9px] font-medium uppercase tracking-[0.45em] text-paper/40">
+              The House Philosophy
+            </p>
+            <p className="mt-8 font-display text-2xl font-medium leading-relaxed text-paper sm:text-[1.75rem]">
+              &ldquo;Luxury is not about more.
+              <br />
+              <em className="font-normal italic text-paper/70">
+                It&apos;s about the one that cannot be repeated.
+              </em>
+              &rdquo;
+            </p>
+            <div className="mx-auto mt-8 h-px w-12 bg-paper/25" />
+            <p className="mt-6 text-[11px] uppercase tracking-[0.3em] text-paper/40">
+              Good Catch · Curated Vintage
+            </p>
+          </Reveal>
+        </div>
+      </section>
     </div>
   );
 }

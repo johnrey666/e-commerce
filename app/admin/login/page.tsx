@@ -2,49 +2,99 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { useAuthStore } from "@/lib/store/auth-store";
+
+type Mode = "login" | "signup";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const signup = useAuthStore((s) => s.signup);
+  const initialize = useAuthStore((s) => s.initialize);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
+  const initialized = useAuthStore((s) => s.initialized);
+  const loading = useAuthStore((s) => s.loading);
+
+  const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (login(email, password)) {
-      router.push("/admin");
-    } else {
-      setError("Invalid email or password.");
+  useEffect(() => {
+    void initialize();
+  }, [initialize]);
+
+  useEffect(() => {
+    if (initialized && isAdmin) {
+      router.replace("/admin");
     }
+  }, [initialized, isAdmin, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setInfo(null);
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    const result =
+      mode === "login"
+        ? await login(email, password)
+        : await signup(email, password);
+
+    if (!result.ok) {
+      setError(result.error ?? "Something went wrong.");
+      return;
+    }
+
+    if (result.needsEmailConfirmation) {
+      setInfo(
+        "Check your email to confirm your account, then sign in. (Or turn off “Confirm email” in Supabase Auth settings for local testing.)"
+      );
+      setMode("login");
+      return;
+    }
+
+    router.push("/admin");
   };
 
   return (
-    <div className="grid min-h-screen place-items-center bg-cream px-4">
+    <div className="grid min-h-screen place-items-center bg-paper px-4">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className="w-full max-w-sm"
       >
-        <div className="mb-10 flex justify-center">
+        <div className="mb-12 flex justify-center">
           <Logo size="xl" />
         </div>
         <form
           onSubmit={handleSubmit}
-          className="rounded-3xl border border-line/70 bg-surface p-8 shadow-card"
+          className="border border-ink/10 bg-surface p-8 sm:p-10"
         >
-          <h1 className="font-display text-2xl font-bold">Admin login</h1>
-          <p className="mt-1 text-sm text-muted">
-            Placeholder auth — swap in NextAuth/Firebase later.
+          <p className="eyebrow">The Back Room</p>
+          <h1 className="mt-3 font-display text-[1.75rem] font-medium leading-tight text-ink">
+            {mode === "login" ? "Admin Login" : "Create Admin Account"}
+          </h1>
+          <p className="mt-2 text-[13px] leading-relaxed text-ink/45">
+            {mode === "login"
+              ? "Sign in with your Supabase admin account."
+              : "Register a new admin for the Good Catch dashboard."}
           </p>
 
-          <div className="mt-6 space-y-4">
+          <div className="mt-8 space-y-5">
             <div>
-              <label htmlFor="email" className="mb-1.5 block text-sm font-medium">
+              <label
+                htmlFor="email"
+                className="mb-2 block text-[10px] font-medium uppercase tracking-[0.24em] text-ink/55"
+              >
                 Email
               </label>
               <input
@@ -54,43 +104,71 @@ export default function AdminLoginPage() {
                 autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-line px-4 py-3 text-sm outline-none transition-colors focus:border-brand"
+                className="input-field"
               />
             </div>
             <div>
-              <label htmlFor="password" className="mb-1.5 block text-sm font-medium">
+              <label
+                htmlFor="password"
+                className="mb-2 block text-[10px] font-medium uppercase tracking-[0.24em] text-ink/55"
+              >
                 Password
               </label>
               <input
                 id="password"
                 type="password"
                 required
-                autoComplete="current-password"
+                minLength={6}
+                autoComplete={
+                  mode === "login" ? "current-password" : "new-password"
+                }
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-line px-4 py-3 text-sm outline-none transition-colors focus:border-brand"
+                className="input-field"
               />
             </div>
           </div>
 
           {error && (
-            <p role="alert" className="mt-4 text-sm font-medium text-brand">
+            <p role="alert" className="mt-5 text-sm font-medium text-brand">
               {error}
+            </p>
+          )}
+
+          {info && (
+            <p role="status" className="mt-5 text-[13px] leading-relaxed text-ink/55">
+              {info}
             </p>
           )}
 
           <motion.button
             type="submit"
-            whileTap={{ scale: 0.97 }}
-            className="mt-6 w-full rounded-full bg-brand py-3.5 font-semibold text-white transition-colors hover:bg-brand-dark"
+            disabled={loading}
+            whileTap={{ scale: 0.98 }}
+            className="btn-primary mt-8 w-full disabled:opacity-60"
           >
-            Sign in
+            {loading
+              ? mode === "login"
+                ? "Signing In…"
+                : "Creating Account…"
+              : mode === "login"
+                ? "Sign In"
+                : "Sign Up"}
           </motion.button>
 
-          <p className="mt-5 rounded-xl bg-cream p-3 text-xs text-muted">
-            Demo credentials: <strong>admin@goodcatch.shop</strong> /{" "}
-            <strong>goodcatch123</strong>
-          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setMode(mode === "login" ? "signup" : "login");
+              setError(null);
+              setInfo(null);
+            }}
+            className="mt-6 w-full text-center text-[10px] font-medium uppercase tracking-[0.24em] text-ink/45 transition-colors duration-300 hover:text-ink"
+          >
+            {mode === "login"
+              ? "Need an account? Sign Up"
+              : "Already have an account? Sign In"}
+          </button>
         </form>
       </motion.div>
     </div>

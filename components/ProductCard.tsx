@@ -37,75 +37,83 @@ export function ProductCard({
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 14 }}
+      initial={{ opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-20px" }}
-      transition={{ duration: 0.45, delay: (index % 6) * 0.05, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.6, delay: (index % 6) * 0.06, ease: [0.22, 1, 0.36, 1] }}
       className="group/card"
     >
       <Link
         href={`/product/${product.id}`}
-        className="relative block aspect-[3/4] overflow-hidden rounded-2xl bg-brand-soft"
+        className="relative block aspect-[3/4] overflow-hidden bg-brand-soft"
       >
         <ProductImage
           image={product.images[0]}
           alt={product.name}
-          className="[&_img]:transition-transform [&_img]:duration-700 [&_img]:ease-out [&_img]:group-hover/card:scale-[1.04]"
+          className="[&_img]:transition-transform [&_img]:duration-[1200ms] [&_img]:ease-out [&_img]:group-hover/card:scale-[1.05]"
         />
 
-        <div className="absolute left-2.5 top-2.5 flex gap-1">
+        <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
           {product.isNewArrival && (
-            <span className="rounded-full bg-white/95 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-brand shadow-sm">
-              New
+            <span className="bg-paper/95 px-2.5 py-1 text-[8px] font-medium uppercase tracking-[0.25em] text-ink">
+              New In
             </span>
           )}
           {percent != null && (
-            <span className="rounded-full bg-brand px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+            <span className="bg-accent px-2.5 py-1 text-[8px] font-medium uppercase tracking-[0.25em] text-white">
               −{percent}%
             </span>
           )}
         </div>
 
         {!soldOut && (
-          <motion.button
-            initial={{ opacity: 0, y: 6 }}
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={quickAdd}
-            aria-label={`Add ${product.name}`}
-            className="absolute bottom-3 right-3 grid size-9 place-items-center rounded-full bg-white text-brand opacity-0 shadow-md transition-opacity duration-300 group-hover/card:opacity-100"
-          >
-            <PlusIcon width={16} height={16} />
-          </motion.button>
+          <>
+            {/* Desktop — slide-up bar on hover */}
+            <button
+              onClick={quickAdd}
+              aria-label={`Add ${product.name}`}
+              className="absolute inset-x-0 bottom-0 hidden translate-y-full bg-brand/95 py-3.5 text-[10px] font-medium uppercase tracking-[0.3em] text-white backdrop-blur-sm transition-transform duration-500 ease-out hover:bg-brand-dark group-hover/card:translate-y-0 sm:block"
+            >
+              Add to Bag
+            </button>
+            {/* Mobile — always-visible quiet quick-add */}
+            <button
+              onClick={quickAdd}
+              aria-label={`Add ${product.name}`}
+              className="absolute bottom-2.5 right-2.5 grid size-9 place-items-center border border-white/40 bg-white/85 text-brand shadow-sm backdrop-blur-sm transition-colors active:bg-brand active:text-white sm:hidden"
+            >
+              <PlusIcon width={15} height={15} strokeWidth={1.5} />
+            </button>
+          </>
         )}
 
         {soldOut && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/75 backdrop-blur-[2px]">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand/40">
-              Sold out
+          <div className="absolute inset-0 flex items-center justify-center bg-paper/70 backdrop-blur-[2px]">
+            <span className="border border-ink/30 px-4 py-2 text-[9px] font-medium uppercase tracking-[0.3em] text-ink/60">
+              Sold
             </span>
           </div>
         )}
       </Link>
 
-      <div className="mt-3.5 space-y-1">
+      <div className="mt-4 space-y-1.5 text-center">
         {brandName && (
-          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-brand/35">
+          <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-ink/40">
             {brandName}
           </p>
         )}
         <Link
           href={`/product/${product.id}`}
-          className="line-clamp-1 text-[14px] font-medium text-brand-dark transition-colors duration-200 hover:text-brand"
+          className="block font-display text-[17px] font-medium leading-snug text-ink transition-colors duration-300 hover:text-accent"
         >
-          {product.name}
+          <span className="line-clamp-1">{product.name}</span>
         </Link>
-        <div className="flex items-baseline gap-2">
-          <span className="text-[14px] font-semibold text-brand">
+        <div className="flex items-baseline justify-center gap-2.5">
+          <span className="text-[12px] tracking-[0.08em] text-ink/75">
             {formatPrice(effectivePrice(product))}
           </span>
           {percent != null && (
-            <span className="text-xs text-brand/30 line-through">
+            <span className="text-[11px] tracking-[0.05em] text-ink/30 line-through">
               {formatPrice(product.price)}
             </span>
           )}

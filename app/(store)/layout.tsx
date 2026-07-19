@@ -9,7 +9,7 @@ export default function StoreLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col bg-paper pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
       <Header />
       <main className="flex-1">
         <PageTransition>{children}</PageTransition>

@@ -11,12 +11,17 @@ export default function AdminBrandsPage() {
   const deleteBrand = useCatalogStore((s) => s.deleteBrand);
 
   if (!ready) {
-    return <p className="py-12 text-center text-sm text-muted">Loading…</p>;
+    return (
+      <p className="py-12 text-center text-[10px] font-medium uppercase tracking-[0.4em] text-ink/40">
+        Loading
+      </p>
+    );
   }
 
   return (
     <NamedListManager
       title="Brands"
+      eyebrow="The Index"
       description="Brands added here feed the brand filter on the shop page."
       items={brands}
       usageCount={(id) => products.filter((p) => p.brandId === id).length}

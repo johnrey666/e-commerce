@@ -16,75 +16,80 @@ export default function CartPage() {
   const total = useCartStore(selectCartTotal);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-      <motion.h1
+    <div className="mx-auto max-w-4xl px-5 py-16 sm:px-8 sm:py-20">
+      <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="font-display text-3xl font-bold tracking-tight sm:text-4xl"
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="text-center"
       >
-        Your Cart
-      </motion.h1>
+        <div className="rule-diamond mx-auto max-w-sm">
+          <p className="eyebrow">Good Catch</p>
+        </div>
+        <h1 className="section-title mt-5">Your Bag</h1>
+      </motion.div>
 
       {!mounted ? null : items.length === 0 ? (
-        <div className="mt-10 grid place-items-center rounded-3xl bg-white py-20 text-center shadow-card">
-          <p className="font-display text-xl font-bold">Nothing on the hook yet</p>
-          <p className="mt-2 text-sm text-muted">
-            Every piece is one of one — don&apos;t sleep on a good catch.
+        <div className="mt-14 grid place-items-center border border-ink/10 bg-surface py-24 text-center">
+          <p className="font-display text-2xl font-medium text-ink">
+            Nothing on the hook yet
           </p>
-          <Link
-            href="/shop"
-            className="mt-6 rounded-full bg-brand px-8 py-3 font-semibold text-white transition-colors hover:bg-brand-dark"
-          >
-            Browse the rack
+          <p className="mt-3 max-w-xs text-[13px] leading-relaxed text-ink/45">
+            Every piece is one of one — don&apos;t let a good catch get away.
+          </p>
+          <Link href="/shop" className="btn-primary mt-8">
+            Browse the Collection
           </Link>
         </div>
       ) : (
-        <div className="mt-8 space-y-6">
-          <ul className="divide-y divide-line rounded-3xl bg-white px-6 shadow-card">
+        <div className="mt-12 space-y-8">
+          <ul className="divide-y divide-ink/8 border-y border-ink/10">
             {items.map((item) => (
               <li
                 key={`${item.productId}-${item.size ?? ""}`}
-                className="flex gap-4 py-5"
+                className="flex gap-6 py-7"
               >
                 <Link
                   href={`/product/${item.productId}`}
-                  className="block h-24 w-20 shrink-0 overflow-hidden rounded-xl"
+                  className="block h-28 w-[88px] shrink-0 overflow-hidden bg-brand-soft"
                 >
                   <ProductImage image={item.image} alt={item.name} />
                 </Link>
                 <div className="flex flex-1 flex-col">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
                       <Link
                         href={`/product/${item.productId}`}
-                        className="font-medium hover:text-brand"
+                        className="font-display text-lg font-medium text-ink transition-colors hover:text-accent"
                       >
                         {item.name}
                       </Link>
                       {item.size && (
-                        <p className="text-xs text-muted">Size: {item.size}</p>
+                        <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-ink/40">
+                          Size {item.size}
+                        </p>
                       )}
                     </div>
                     <button
                       onClick={() => removeItem(item.productId, item.size)}
                       aria-label={`Remove ${item.name}`}
-                      className="text-muted transition-colors hover:text-brand"
+                      className="text-ink/30 transition-colors hover:text-accent"
                     >
-                      <TrashIcon width={17} height={17} />
+                      <TrashIcon width={16} height={16} strokeWidth={1.5} />
                     </button>
                   </div>
-                  <div className="mt-auto flex items-center justify-between pt-3">
-                    <div className="flex items-center gap-2 rounded-full border border-line px-1.5 py-1">
+                  <div className="mt-auto flex items-center justify-between pt-4">
+                    <div className="flex items-center gap-1 border border-ink/15 px-1.5 py-0.5">
                       <button
                         onClick={() =>
                           setQuantity(item.productId, item.size, item.quantity - 1)
                         }
                         aria-label="Decrease quantity"
-                        className="grid size-7 place-items-center rounded-full hover:bg-cream"
+                        className="grid size-7 place-items-center text-ink/60 transition-colors hover:text-ink"
                       >
-                        <MinusIcon width={14} height={14} />
+                        <MinusIcon width={13} height={13} strokeWidth={1.5} />
                       </button>
-                      <span className="min-w-5 text-center font-medium">
+                      <span className="min-w-5 text-center text-[13px] text-ink">
                         {item.quantity}
                       </span>
                       <button
@@ -92,12 +97,12 @@ export default function CartPage() {
                           setQuantity(item.productId, item.size, item.quantity + 1)
                         }
                         aria-label="Increase quantity"
-                        className="grid size-7 place-items-center rounded-full hover:bg-cream"
+                        className="grid size-7 place-items-center text-ink/60 transition-colors hover:text-ink"
                       >
-                        <PlusIcon width={14} height={14} />
+                        <PlusIcon width={13} height={13} strokeWidth={1.5} />
                       </button>
                     </div>
-                    <span className="font-display font-bold">
+                    <span className="text-[14px] font-medium tracking-[0.05em] text-ink">
                       {formatPrice(item.unitPrice * item.quantity)}
                     </span>
                   </div>
@@ -106,28 +111,24 @@ export default function CartPage() {
             ))}
           </ul>
 
-          <div className="rounded-3xl bg-white p-6 shadow-card">
-            <div className="flex items-center justify-between">
-              <span className="text-muted">Total</span>
-              <span className="font-display text-2xl font-bold">
+          <div className="border border-ink/10 bg-surface p-8">
+            <div className="flex items-baseline justify-between">
+              <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-ink/45">
+                Total
+              </span>
+              <span className="font-display text-3xl font-medium text-ink">
                 {formatPrice(total)}
               </span>
             </div>
-            <p className="mt-2 text-xs text-muted">
-              Delivery to your address · payment via GCash.
+            <p className="mt-3 text-[10px] uppercase tracking-[0.2em] text-ink/35">
+              Complimentary delivery · GCash at checkout
             </p>
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/checkout"
-                className="flex-1 rounded-full bg-brand py-3.5 text-center font-semibold text-white transition-colors hover:bg-brand-dark"
-              >
-                Proceed to checkout
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <Link href="/checkout" className="btn-primary flex-1 text-center">
+                Proceed to Checkout
               </Link>
-              <Link
-                href="/shop"
-                className="flex-1 rounded-full border border-line py-3.5 text-center font-semibold transition-colors hover:border-ink"
-              >
-                Continue shopping
+              <Link href="/shop" className="btn-secondary flex-1 text-center">
+                Continue Browsing
               </Link>
             </div>
           </div>

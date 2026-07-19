@@ -19,42 +19,44 @@ export default function AdminDashboardPage() {
     .reduce((sum, o) => sum + o.total, 0);
 
   const stats = [
-    { label: "Total products", value: ready ? products.length : "—", href: "/admin/products" },
-    { label: "Total orders", value: mounted ? orders.length : "—", href: "/admin/orders" },
-    { label: "Pending orders", value: mounted ? pendingOrders.length : "—", href: "/admin/orders" },
-    { label: "Low stock (≤1)", value: ready ? lowStock.length : "—", href: "/admin/products" },
-    { label: "On sale", value: ready ? onSale.length : "—", href: "/admin/products" },
+    { label: "Total Products", value: ready ? products.length : "—", href: "/admin/products" },
+    { label: "Total Orders", value: mounted ? orders.length : "—", href: "/admin/orders" },
+    { label: "Pending Orders", value: mounted ? pendingOrders.length : "—", href: "/admin/orders" },
+    { label: "Low Stock", value: ready ? lowStock.length : "—", href: "/admin/products" },
+    { label: "On Sale", value: ready ? onSale.length : "—", href: "/admin/products" },
     { label: "Brands", value: ready ? brands.length : "—", href: "/admin/brands" },
   ];
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-          Dashboard
-        </h1>
-        <Link
-          href="/admin/products/new"
-          className="rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
-        >
-          + Add product
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <div>
+          <p className="eyebrow">The Back Room</p>
+          <h1 className="mt-3 font-display text-[2rem] font-medium leading-[1.1] tracking-[-0.01em] text-ink sm:text-[2.6rem]">
+            Dashboard
+          </h1>
+        </div>
+        <Link href="/admin/products/new" className="btn-primary !px-8 !py-3.5">
+          Add Product
         </Link>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-10 grid grid-cols-2 border-l border-t border-ink/10 sm:grid-cols-3 lg:grid-cols-6">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
+            transition={{ delay: i * 0.05, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
             <Link
               href={stat.href}
-              className="block rounded-2xl bg-white p-5 shadow-card transition-shadow hover:shadow-lift"
+              className="group block border-b border-r border-ink/10 bg-surface p-6 transition-colors duration-300 hover:bg-brand-faint"
             >
-              <p className="text-xs font-medium text-muted">{stat.label}</p>
-              <p className="mt-1 font-display text-3xl font-bold">
+              <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-ink/45">
+                {stat.label}
+              </p>
+              <p className="mt-3 font-display text-4xl font-medium text-ink transition-colors duration-300 group-hover:text-brand">
                 {stat.value}
               </p>
             </Link>
@@ -62,69 +64,79 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="mt-14 grid gap-10 lg:grid-cols-2">
         <motion.section
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="rounded-3xl bg-white p-6 shadow-card"
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="border border-ink/10 bg-surface p-7 sm:p-8"
         >
-          <h2 className="font-display text-lg font-bold">Recent orders</h2>
+          <p className="eyebrow">Ledger</p>
+          <h2 className="mt-2 font-display text-xl font-medium text-ink">
+            Recent Orders
+          </h2>
           {!mounted || orders.length === 0 ? (
-            <p className="mt-4 text-sm text-muted">
+            <p className="mt-6 text-[13px] leading-relaxed text-ink/45">
               No orders yet — they&apos;ll appear here when customers check out.
             </p>
           ) : (
-            <ul className="mt-4 divide-y divide-line">
+            <ul className="mt-5 divide-y divide-ink/8">
               {orders.slice(0, 5).map((order) => (
-                <li key={order.id} className="flex items-center justify-between py-3 text-sm">
+                <li key={order.id} className="flex items-center justify-between py-3.5 text-sm">
                   <div>
-                    <p className="font-semibold">{order.id}</p>
-                    <p className="text-xs text-muted">
+                    <p className="font-medium text-ink">{order.id}</p>
+                    <p className="mt-0.5 text-xs text-ink/45">
                       {order.customer.firstName} {order.customer.lastName} ·{" "}
                       {new Date(order.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold">{formatPrice(order.total)}</p>
-                    <p className="text-xs text-muted">{order.status}</p>
+                    <p className="font-medium text-ink">{formatPrice(order.total)}</p>
+                    <p className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.25em] text-ink/45">
+                      {order.status}
+                    </p>
                   </div>
                 </li>
               ))}
             </ul>
           )}
-          <p className="mt-3 text-xs text-muted">
-            Completed revenue: {formatPrice(mounted ? revenue : 0)}
+          <p className="mt-6 border-t border-ink/8 pt-4 text-[10px] font-medium uppercase tracking-[0.25em] text-ink/45">
+            Completed revenue · {formatPrice(mounted ? revenue : 0)}
           </p>
         </motion.section>
 
         <motion.section
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="rounded-3xl bg-white p-6 shadow-card"
+          transition={{ delay: 0.35, duration: 0.5 }}
+          className="border border-ink/10 bg-surface p-7 sm:p-8"
         >
-          <h2 className="font-display text-lg font-bold">Low stock alerts</h2>
+          <p className="eyebrow">Inventory</p>
+          <h2 className="mt-2 font-display text-xl font-medium text-ink">
+            Low Stock Alerts
+          </h2>
           {!ready || lowStock.length === 0 ? (
-            <p className="mt-4 text-sm text-muted">All stocked up.</p>
+            <p className="mt-6 text-[13px] leading-relaxed text-ink/45">
+              All stocked up.
+            </p>
           ) : (
-            <ul className="mt-4 divide-y divide-line">
+            <ul className="mt-5 divide-y divide-ink/8">
               {lowStock.slice(0, 5).map((p) => (
-                <li key={p.id} className="flex items-center justify-between py-3 text-sm">
+                <li key={p.id} className="flex items-center justify-between py-3.5 text-sm">
                   <Link
                     href={`/admin/products/${p.id}/edit`}
-                    className="font-medium hover:text-brand"
+                    className="font-medium text-ink transition-colors hover:text-brand"
                   >
                     {p.name}
                   </Link>
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    className={`px-3 py-1 text-[9px] font-medium uppercase tracking-[0.25em] ${
                       p.stock === 0
                         ? "bg-brand text-white"
-                        : "bg-brand-light text-brand"
+                        : "bg-brand-soft text-brand"
                     }`}
                   >
-                    {p.stock === 0 ? "Sold out" : `${p.stock} left`}
+                    {p.stock === 0 ? "Sold Out" : `${p.stock} Left`}
                   </span>
                 </li>
               ))}

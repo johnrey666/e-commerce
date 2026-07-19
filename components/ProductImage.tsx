@@ -33,7 +33,7 @@ export function ProductImage({
       aria-label={alt}
       className={`flex h-full w-full items-center justify-center bg-brand-soft ${className}`}
     >
-      <HangerIcon width={24} height={24} strokeWidth={1.25} className="text-brand/25" />
+      <HangerIcon width={24} height={24} strokeWidth={1} className="text-ink/20" />
     </div>
   );
 }

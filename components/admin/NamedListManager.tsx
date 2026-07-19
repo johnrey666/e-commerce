@@ -12,6 +12,7 @@ interface NamedItem {
 /** Shared add/edit/remove list UI used for both Brands and Categories. */
 export function NamedListManager({
   title,
+  eyebrow,
   description,
   items,
   usageCount,
@@ -20,6 +21,7 @@ export function NamedListManager({
   onDelete,
 }: {
   title: string;
+  eyebrow?: string;
   description: string;
   items: NamedItem[];
   /** How many products reference an item — deletion is blocked while > 0. */
@@ -49,29 +51,32 @@ export function NamedListManager({
 
   return (
     <div className="max-w-2xl">
-      <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+      {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+      <h1 className="mt-3 font-display text-[2rem] font-medium leading-[1.1] tracking-[-0.01em] text-ink sm:text-[2.6rem]">
         {title}
       </h1>
-      <p className="mt-1 text-sm text-muted">{description}</p>
+      <p className="mt-3 text-[13px] leading-relaxed text-ink/45">
+        {description}
+      </p>
 
-      <form onSubmit={handleAdd} className="mt-6 flex gap-3">
+      <form onSubmit={handleAdd} className="mt-8 flex gap-3">
         <input
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder={`New ${title.toLowerCase().replace(/s$/, "")} name…`}
           aria-label={`New ${title} name`}
-          className="flex-1 rounded-full border border-line bg-white px-5 py-3 text-sm outline-none transition-colors focus:border-brand"
+          className="input-field flex-1"
         />
         <motion.button
           type="submit"
-          whileTap={{ scale: 0.95 }}
-          className="rounded-full bg-brand px-7 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
+          whileTap={{ scale: 0.97 }}
+          className="btn-primary !px-8 !py-3.5"
         >
           Add
         </motion.button>
       </form>
 
-      <ul className="mt-6 divide-y divide-line rounded-3xl bg-white px-6 shadow-card">
+      <ul className="mt-8 divide-y divide-ink/8 border border-ink/10 bg-surface px-6 sm:px-7">
         <AnimatePresence initial={false}>
           {items.map((item) => {
             const used = usageCount(item.id);
@@ -93,19 +98,19 @@ export function NamedListManager({
                       onKeyDown={(e) => e.key === "Enter" && saveEdit(item.id)}
                       aria-label={`Rename ${item.name}`}
                       autoFocus
-                      className="flex-1 rounded-xl border border-brand px-4 py-2 text-sm outline-none"
+                      className="flex-1 border border-ink px-4 py-2.5 text-sm text-ink outline-none"
                     />
                     <button
                       onClick={() => saveEdit(item.id)}
                       aria-label="Save name"
-                      className="grid size-9 place-items-center rounded-full bg-brand text-white hover:bg-brand-dark"
+                      className="grid size-9 place-items-center bg-brand text-white transition-colors hover:bg-brand-dark"
                     >
                       <CheckIcon width={16} height={16} />
                     </button>
                     <button
                       onClick={() => setEditingId(null)}
                       aria-label="Cancel rename"
-                      className="grid size-9 place-items-center rounded-full border border-line hover:border-ink"
+                      className="grid size-9 place-items-center border border-ink/15 text-ink/60 transition-colors hover:border-ink hover:text-ink"
                     >
                       <CloseIcon width={16} height={16} />
                     </button>
@@ -113,8 +118,8 @@ export function NamedListManager({
                 ) : (
                   <>
                     <div className="flex-1">
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-xs text-muted">
+                      <p className="font-medium text-ink">{item.name}</p>
+                      <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-ink/40">
                         {used} {used === 1 ? "product" : "products"}
                       </p>
                     </div>
@@ -123,7 +128,7 @@ export function NamedListManager({
                         setEditingId(item.id);
                         setEditName(item.name);
                       }}
-                      className="rounded-full border border-line px-4 py-1.5 text-xs font-medium transition-colors hover:border-brand hover:text-brand"
+                      className="border border-ink/15 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-ink/60 transition-all duration-300 hover:border-ink hover:text-ink"
                     >
                       Rename
                     </button>
@@ -140,7 +145,7 @@ export function NamedListManager({
                         }
                       }}
                       aria-label={`Delete ${item.name}`}
-                      className="grid size-8 place-items-center rounded-full text-muted transition-colors hover:bg-brand-light hover:text-brand"
+                      className="grid size-8 place-items-center text-ink/35 transition-colors hover:bg-brand-soft hover:text-brand"
                     >
                       <TrashIcon width={15} height={15} />
                     </button>
@@ -151,7 +156,7 @@ export function NamedListManager({
           })}
         </AnimatePresence>
         {items.length === 0 && (
-          <li className="py-10 text-center text-sm text-muted">
+          <li className="py-12 text-center text-[13px] text-ink/45">
             Nothing here yet — add one above.
           </li>
         )}

@@ -14,14 +14,14 @@ export function OrderConfirmationClient() {
   const order = useOrderStore((s) => s.orders.find((o) => o.id === orderId));
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
+    <div className="mx-auto max-w-2xl px-5 py-20 text-center sm:px-8 sm:py-28">
       <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 260, damping: 16, delay: 0.1 }}
-        className="mx-auto grid size-20 place-items-center rounded-full bg-brand text-white"
+        initial={{ scale: 0, rotate: -8 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.1 }}
+        className="mx-auto grid size-20 place-items-center rounded-full border border-ink/15 bg-ink text-paper"
       >
-        <CheckIcon width={38} height={38} strokeWidth={2.5} />
+        <CheckIcon width={32} height={32} strokeWidth={1.5} />
       </motion.div>
 
       <motion.div
@@ -29,12 +29,12 @@ export function OrderConfirmationClient() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
       >
-        <h1 className="mt-6 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Order received!
-        </h1>
-        <p className="mt-3 text-muted">
-          Thanks for shopping at Good Catch. We&apos;ll contact you shortly to
-          confirm payment and notify you when your order is out for delivery.
+        <p className="eyebrow mt-10">With Gratitude</p>
+        <h1 className="section-title mt-4">Your order is received</h1>
+        <p className="mx-auto mt-5 max-w-md text-[13px] leading-relaxed text-ink/50">
+          Thank you for shopping with Good Catch. We&apos;ll contact you
+          shortly to confirm payment and let you know once your piece is on
+          its way.
         </p>
       </motion.div>
 
@@ -43,40 +43,46 @@ export function OrderConfirmationClient() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mt-8 rounded-3xl bg-white p-6 text-left shadow-card"
+          className="mt-12 border border-ink/10 bg-surface p-8 text-left"
         >
-          <div className="flex items-center justify-between border-b border-line pb-4">
+          <div className="flex items-center justify-between border-b border-ink/10 pb-5">
             <div>
-              <p className="text-xs text-muted">Order number</p>
-              <p className="font-display text-lg font-bold">{order.id}</p>
+              <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-ink/40">
+                Order number
+              </p>
+              <p className="mt-1 font-display text-xl font-medium text-ink">
+                {order.id}
+              </p>
             </div>
-            <span className="rounded-full bg-brand-light px-3 py-1 text-xs font-semibold text-brand">
+            <span className="border border-ink/20 px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.25em] text-ink/70">
               {order.status}
             </span>
           </div>
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-ink/8">
             {order.items.map((item) => (
               <li
                 key={`${item.productId}-${item.size ?? ""}`}
-                className="flex justify-between py-3 text-sm"
+                className="flex justify-between py-4 text-[13px] text-ink/70"
               >
                 <span>
                   {item.name}
                   {item.size ? ` (${item.size})` : ""} × {item.quantity}
                 </span>
-                <span className="font-semibold">
+                <span className="font-medium text-ink">
                   {formatPrice(item.unitPrice * item.quantity)}
                 </span>
               </li>
             ))}
           </ul>
-          <div className="flex justify-between border-t border-line pt-4">
-            <span className="font-medium">Total</span>
-            <span className="font-display text-xl font-bold">
+          <div className="flex items-baseline justify-between border-t border-ink/10 pt-5">
+            <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-ink/45">
+              Total
+            </span>
+            <span className="font-display text-2xl font-medium text-ink">
               {formatPrice(order.total)}
             </span>
           </div>
-          <p className="mt-4 text-xs text-muted">
+          <p className="mt-5 text-[11px] leading-relaxed text-ink/40">
             A confirmation was &quot;sent&quot; to {order.customer.email} —
             placeholder, email sending comes with the real backend.
           </p>
@@ -87,13 +93,10 @@ export function OrderConfirmationClient() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.55 }}
-        className="mt-8"
+        className="mt-12"
       >
-        <Link
-          href="/shop"
-          className="inline-block rounded-full bg-brand px-8 py-3.5 font-semibold text-white transition-colors hover:bg-brand-dark"
-        >
-          Keep browsing
+        <Link href="/shop" className="btn-primary">
+          Continue Browsing
         </Link>
       </motion.div>
     </div>

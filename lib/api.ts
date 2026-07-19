@@ -1,17 +1,16 @@
-import { seedBrands, seedCategories, seedProducts as rawSeedProducts } from "./seed-data";
-import { assignProductImages } from "./sample-images";
+import { seedBrands, seedCategories } from "./seed-data";
 import type { Brand, Category, Product } from "./types";
 
 /**
  * Data-access layer.
  *
- * Everything below is async and returns copies of seed data so that swapping
- * in a real backend (Firebase/Firestore, Supabase, REST API...) only requires
- * changing these function bodies — no component rewrites.
+ * Everything below is async so that swapping in the Supabase backend only
+ * requires changing these function bodies — no component rewrites.
  */
 
 export async function fetchProducts(): Promise<Product[]> {
-  return structuredClone(assignProductImages(rawSeedProducts));
+  // Catalog starts empty — real products are added via the admin dashboard.
+  return [];
 }
 
 export async function fetchBrands(): Promise<Brand[]> {

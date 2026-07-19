@@ -1,20 +1,23 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #e63946;
-  --color-brand-dark: #c1121f;
-  --color-brand-soft: #fff8f8;
-  --color-brand-faint: #fff0f1;
-  --color-brand-light: #fff8f8;
+  /* Luxury red & white — built around the house red #c1121f on crisp white */
+  --color-brand: #c1121f;
+  --color-brand-dark: #8c0d16;
+  --color-brand-soft: #fdf1f0;
+  --color-brand-faint: #fef8f7;
+  --color-brand-light: #fdf1f0;
 
-  --color-ink: #c1121f;
-  --color-muted: #e6394680;
-  --color-line: #e6394618;
+  --color-accent: #c1121f;
+  --color-ink: #261b1a;
+  --color-muted: #261b1a73;
+  --color-line: #261b1a14;
   --color-surface: #ffffff;
-  --color-cream: #fff8f8;
+  --color-cream: #fbf5f4;
+  --color-paper: #ffffff;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
 }
 
 html {
@@ -22,15 +25,16 @@ html {
 }
 
 body {
-  background: #ffffff;
-  color: var(--color-brand-dark);
+  background: var(--color-paper);
+  color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background: var(--color-brand);
-  color: white;
+  background: var(--color-accent);
+  color: #ffffff;
 }
 
 .no-scrollbar {
@@ -40,38 +44,63 @@ body {
   display: none;
 }
 
+.font-display {
+  font-family: var(--font-display);
+}
+
 .eyebrow {
-  @apply text-[10px] font-semibold uppercase tracking-[0.32em] text-brand/70;
+  @apply text-[10px] font-medium uppercase tracking-[0.4em] text-ink/50;
 }
 
 .section-title {
-  @apply text-[1.65rem] font-semibold tracking-[-0.02em] text-brand-dark sm:text-[2rem];
+  @apply font-display text-[2rem] font-medium leading-[1.1] tracking-[-0.01em] text-ink sm:text-[2.6rem];
 }
 
 .section-sub {
-  @apply mt-2 text-sm leading-relaxed text-brand/45;
+  @apply mt-3 text-[13px] leading-relaxed tracking-[0.01em] text-ink/45;
 }
 
 .btn-primary {
-  @apply inline-flex items-center justify-center rounded-full bg-brand px-8 py-3.5 text-[13px] font-semibold tracking-wide text-white transition-all duration-300 ease-out hover:bg-brand-dark hover:shadow-[0_8px_24px_-8px_rgba(230,57,70,0.55)] active:scale-[0.97];
+  @apply inline-flex items-center justify-center bg-brand px-10 py-4 text-[11px] font-medium uppercase tracking-[0.28em] text-white transition-all duration-500 ease-out hover:bg-brand-dark active:scale-[0.99];
 }
 
 .btn-secondary {
-  @apply inline-flex items-center justify-center rounded-full border border-brand/20 bg-white px-8 py-3.5 text-[13px] font-semibold text-brand transition-all duration-300 ease-out hover:border-brand hover:bg-brand-soft active:scale-[0.97];
+  @apply inline-flex items-center justify-center border border-brand/30 bg-transparent px-10 py-4 text-[11px] font-medium uppercase tracking-[0.28em] text-brand transition-all duration-500 ease-out hover:border-brand hover:bg-brand hover:text-white active:scale-[0.99];
 }
 
 .btn-ghost {
-  @apply inline-flex items-center gap-1 text-[13px] font-medium text-brand/55 transition-colors duration-200 hover:text-brand;
+  @apply inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] text-ink/50 transition-colors duration-300 hover:text-ink;
 }
 
 .nav-link {
-  @apply relative text-[13px] font-medium text-brand/45 transition-colors duration-200 hover:text-brand;
+  @apply relative text-[11px] font-medium uppercase tracking-[0.26em] text-ink/55 transition-colors duration-300 hover:text-ink;
 }
 
 .card-minimal {
-  @apply overflow-hidden rounded-2xl bg-white transition-all duration-500 ease-out;
+  @apply overflow-hidden bg-surface transition-all duration-500 ease-out;
 }
 
 .input-field {
-  @apply w-full rounded-xl border border-brand/12 bg-white px-4 py-3.5 text-sm text-brand-dark outline-none transition-all duration-200 placeholder:text-brand/30 focus:border-brand focus:ring-4 focus:ring-brand/8;
+  @apply w-full border border-ink/15 bg-surface px-4 py-3.5 text-sm text-ink outline-none transition-all duration-300 placeholder:text-ink/30 focus:border-ink;
+}
+
+/* Matted gallery frame — hairline border with white matte around imagery */
+.frame {
+  @apply border border-ink/12 bg-surface p-2 sm:p-3;
+}
+
+/* Hairline rule with centered diamond — editorial divider */
+.rule-diamond {
+  @apply relative flex items-center justify-center;
+}
+.rule-diamond::before,
+.rule-diamond::after {
+  content: "";
+  @apply h-px flex-1 bg-ink/12;
+}
+.rule-diamond::before {
+  margin-right: 1.25rem;
+}
+.rule-diamond::after {
+  margin-left: 1.25rem;
 }

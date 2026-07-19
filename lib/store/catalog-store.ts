@@ -46,7 +46,7 @@ export const useCatalogStore = create<CatalogState>()(
       // Seeds the store on first visit; subsequent visits use persisted data.
       initialize: async () => {
         const state = get();
-        if (state.products.length === 0 && state.brands.length === 0) {
+        if (state.brands.length === 0) {
           const [products, brands, categories] = await Promise.all([
             fetchProducts(),
             fetchBrands(),
@@ -54,7 +54,17 @@ export const useCatalogStore = create<CatalogState>()(
           ]);
           set({ products, brands, categories, hydrated: true });
         } else {
-          set({ hydrated: true });
+          // Merge seed categories added after the store was first persisted.
+          const seedCategories = await fetchCategories();
+          const existing = new Set(state.categories.map((c) => c.id));
+          const missing = seedCategories.filter((c) => !existing.has(c.id));
+          set({
+            categories:
+              missing.length > 0
+                ? [...missing, ...state.categories]
+                : state.categories,
+            hydrated: true,
+          });
         }
       },
 
@@ -99,7 +109,8 @@ export const useCatalogStore = create<CatalogState>()(
         set((s) => ({ categories: s.categories.filter((c) => c.id !== id) })),
     }),
     {
-      name: "good-catch-catalog-v3",
+      // v4: sample products removed — catalog starts empty for real inventory.
+      name: "good-catch-catalog-v4",
       partialize: (s) => ({
         products: s.products,
         brands: s.brands,

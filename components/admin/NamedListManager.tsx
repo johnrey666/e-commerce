@@ -26,27 +26,48 @@ export function NamedListManager({
   items: NamedItem[];
   /** How many products reference an item — deletion is blocked while > 0. */
   usageCount: (id: string) => number;
-  onAdd: (name: string) => void;
-  onUpdate: (id: string, name: string) => void;
-  onDelete: (id: string) => void;
+  onAdd: (name: string) => void | Promise<void>;
+  onUpdate: (id: string, name: string) => void | Promise<void>;
+  onDelete: (id: string) => void | Promise<void>;
 }) {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = newName.trim();
     if (!name) return;
     if (items.some((i) => i.name.toLowerCase() === name.toLowerCase())) return;
-    onAdd(name);
-    setNewName("");
+    setBusy(true);
+    setError(null);
+    try {
+      await onAdd(name);
+      setNewName("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : `Could not add ${name}.`);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const saveEdit = (id: string) => {
+  const saveEdit = async (id: string) => {
     const name = editName.trim();
-    if (name) onUpdate(id, name);
-    setEditingId(null);
+    if (!name) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await onUpdate(id, name);
+      setEditingId(null);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : `Could not rename ${name}.`
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -69,12 +90,18 @@ export function NamedListManager({
         />
         <motion.button
           type="submit"
+          disabled={busy}
           whileTap={{ scale: 0.97 }}
-          className="btn-primary !px-8 !py-3.5"
+          className="btn-primary !px-8 !py-3.5 disabled:opacity-50"
         >
-          Add
+          {busy ? "Saving…" : "Add"}
         </motion.button>
       </form>
+      {error && (
+        <p role="alert" className="mt-4 text-sm font-medium text-brand">
+          {error}
+        </p>
+      )}
 
       <ul className="mt-8 divide-y divide-ink/8 border border-ink/10 bg-surface px-6 sm:px-7">
         <AnimatePresence initial={false}>
@@ -95,19 +122,24 @@ export function NamedListManager({
                     <input
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && saveEdit(item.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") void saveEdit(item.id);
+                      }}
                       aria-label={`Rename ${item.name}`}
                       autoFocus
                       className="flex-1 border border-ink px-4 py-2.5 text-sm text-ink outline-none"
                     />
                     <button
-                      onClick={() => saveEdit(item.id)}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void saveEdit(item.id)}
                       aria-label="Save name"
                       className="grid size-9 place-items-center bg-brand text-white transition-colors hover:bg-brand-dark"
                     >
                       <CheckIcon width={16} height={16} />
                     </button>
                     <button
+                      type="button"
                       onClick={() => setEditingId(null)}
                       aria-label="Cancel rename"
                       className="grid size-9 place-items-center border border-ink/15 text-ink/60 transition-colors hover:border-ink hover:text-ink"
@@ -124,6 +156,7 @@ export function NamedListManager({
                       </p>
                     </div>
                     <button
+                      type="button"
                       onClick={() => {
                         setEditingId(item.id);
                         setEditName(item.name);
@@ -133,7 +166,8 @@ export function NamedListManager({
                       Rename
                     </button>
                     <button
-                      onClick={() => {
+                      type="button"
+                      onClick={async () => {
                         if (used > 0) {
                           window.alert(
                             `Cannot delete "${item.name}" — ${used} product(s) still use it.`
@@ -141,7 +175,19 @@ export function NamedListManager({
                           return;
                         }
                         if (window.confirm(`Delete "${item.name}"?`)) {
-                          onDelete(item.id);
+                          setBusy(true);
+                          setError(null);
+                          try {
+                            await onDelete(item.id);
+                          } catch (caught) {
+                            setError(
+                              caught instanceof Error
+                                ? caught.message
+                                : `Could not delete ${item.name}.`
+                            );
+                          } finally {
+                            setBusy(false);
+                          }
                         }
                       }}
                       aria-label={`Delete ${item.name}`}

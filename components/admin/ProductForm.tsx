@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ProductImage } from "@/components/ProductImage";
 import { useCatalog } from "@/lib/hooks";
+import { createClient } from "@/lib/supabase/client";
 import { useCatalogStore } from "@/lib/store/catalog-store";
 import type { Product, ProductCondition } from "@/lib/types";
 
@@ -15,11 +16,6 @@ const CONDITIONS: ProductCondition[] = [
   "Excellent",
   "Good",
   "Fair",
-];
-
-const PLACEHOLDER_HUES = [
-  "slate", "zinc", "gray", "neutral", "stone", "red", "rose",
-  "orange", "amber", "yellow", "lime", "emerald", "teal", "blue", "indigo",
 ];
 
 const labelClass =
@@ -57,27 +53,93 @@ export function ProductForm({ product }: { product?: Product }) {
     categoryId: product?.categoryId ?? "",
     brandId: product?.brandId ?? "",
     condition: product?.condition ?? "Good",
-    images: product?.images ?? ["placeholder:neutral"],
+    images: product?.images ?? [],
     sizes: product?.sizes.join(", ") ?? "",
     stock: product?.stock.toString() ?? "1",
     tags: product?.tags.join(", ") ?? "",
   });
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const toggleImage = (hue: string) => {
-    const ref = `placeholder:${hue}`;
-    setForm((f) => ({
-      ...f,
-      images: f.images.includes(ref)
-        ? f.images.filter((i) => i !== ref)
-        : [...f.images, ref],
-    }));
+  const uploadImages = async (files: FileList | null) => {
+    if (!files?.length) return;
+
+    setImageError(null);
+    setUploading(true);
+
+    try {
+      const selected = Array.from(files);
+      const invalid = selected.find(
+        (file) =>
+          !["image/jpeg", "image/png", "image/webp", "image/avif"].includes(
+            file.type
+          ) || file.size > 8 * 1024 * 1024
+      );
+
+      if (invalid) {
+        throw new Error(
+          "Use JPG, PNG, WebP, or AVIF images up to 8 MB each."
+        );
+      }
+
+      const supabase = createClient();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error("Your admin session expired. Please sign in again.");
+      }
+
+      const urls: string[] = [];
+
+      for (const file of selected) {
+        const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+        const path = `${user.id}/${crypto.randomUUID()}.${extension}`;
+        const { error } = await supabase.storage
+          .from("product-images")
+          .upload(path, file, {
+            cacheControl: "31536000",
+            contentType: file.type,
+            upsert: false,
+          });
+
+        if (error) throw error;
+
+        const { data } = supabase.storage
+          .from("product-images")
+          .getPublicUrl(path);
+        urls.push(data.publicUrl);
+      }
+
+      setForm((current) => ({
+        ...current,
+        images: [...current.images, ...urls],
+      }));
+    } catch (error) {
+      setImageError(
+        error instanceof Error ? error.message : "Image upload failed."
+      );
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError(null);
+
+    if (form.images.length === 0) {
+      setImageError("Upload at least one product image.");
+      return;
+    }
+
     const csv = (s: string) =>
       s.split(",").map((x) => x.trim()).filter(Boolean);
 
@@ -91,18 +153,27 @@ export function ProductForm({ product }: { product?: Product }) {
       categoryId: form.categoryId,
       brandId: form.brandId,
       condition: form.condition,
-      images: form.images.length > 0 ? form.images : ["placeholder:neutral"],
+      images: form.images,
       sizes: csv(form.sizes),
       stock: Number(form.stock),
       tags: csv(form.tags),
     };
 
-    if (product) {
-      updateProduct(product.id, data);
-    } else {
-      addProduct(data);
+    setSaving(true);
+    try {
+      if (product) {
+        await updateProduct(product.id, data);
+      } else {
+        await addProduct(data);
+      }
+      router.push("/admin/products");
+    } catch (error) {
+      setSaveError(
+        error instanceof Error ? error.message : "Could not save product."
+      );
+    } finally {
+      setSaving(false);
     }
-    router.push("/admin/products");
   };
 
   if (!ready) {
@@ -294,27 +365,68 @@ export function ProductForm({ product }: { product?: Product }) {
           Images
         </h2>
         <p className="mt-2 text-[13px] leading-relaxed text-ink/45">
-          Pick one or more placeholder swatches for now — real image upload
-          plugs in with the Supabase backend.
+          Upload up to 8 MB per image. The first image becomes the product
+          cover.
         </p>
-        <div className="mt-5 flex flex-wrap gap-2">
-          {PLACEHOLDER_HUES.map((hue) => {
-            const selected = form.images.includes(`placeholder:${hue}`);
-            return (
-              <button
-                key={hue}
-                type="button"
-                onClick={() => toggleImage(hue)}
-                aria-pressed={selected}
-                aria-label={`${hue} placeholder image`}
-                className={`h-14 w-11 overflow-hidden border-2 transition-all ${
-                  selected ? "scale-105 border-brand" : "border-transparent"
-                }`}
+        <label className="mt-6 flex cursor-pointer flex-col items-center justify-center border border-dashed border-ink/25 px-6 py-10 text-center transition-colors hover:border-brand hover:bg-brand-faint">
+          <span className="text-[10px] font-medium uppercase tracking-[0.25em] text-ink/65">
+            {uploading ? "Uploading…" : "Choose Images"}
+          </span>
+          <span className="mt-2 text-xs text-ink/40">
+            JPG, PNG, WebP, or AVIF · multiple files allowed
+          </span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif"
+            multiple
+            disabled={uploading}
+            onChange={(event) => {
+              void uploadImages(event.target.files);
+              event.target.value = "";
+            }}
+            className="sr-only"
+          />
+        </label>
+
+        {imageError && (
+          <p role="alert" className="mt-4 text-sm font-medium text-brand">
+            {imageError}
+          </p>
+        )}
+
+        {form.images.length > 0 && (
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {form.images.map((image, index) => (
+              <div
+                key={image}
+                className="group relative aspect-[3/4] overflow-hidden border border-ink/10 bg-brand-soft"
               >
-                <ProductImage image={`placeholder:${hue}`} alt="" />
-              </button>
-            );
-          })}
+                <ProductImage image={image} alt={`Product image ${index + 1}`} />
+                {index === 0 && (
+                  <span className="absolute left-2 top-2 bg-paper/95 px-2 py-1 text-[8px] font-medium uppercase tracking-[0.2em] text-ink">
+                    Cover
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() =>
+                    set(
+                      "images",
+                      form.images.filter((item) => item !== image)
+                    )
+                  }
+                  className="absolute right-2 top-2 grid size-8 place-items-center bg-ink/80 text-lg leading-none text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+                  aria-label={`Remove product image ${index + 1}`}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="mt-4 text-[11px] leading-relaxed text-ink/40">
+          Removing an image here removes it from this product. Uploaded files
+          remain in Supabase Storage.
         </div>
       </section>
 
@@ -358,12 +470,22 @@ export function ProductForm({ product }: { product?: Product }) {
       </section>
 
       <div className="flex flex-wrap gap-4">
+        {saveError && (
+          <p role="alert" className="w-full text-sm font-medium text-brand">
+            {saveError}
+          </p>
+        )}
         <motion.button
           type="submit"
+          disabled={uploading || saving}
           whileTap={{ scale: 0.98 }}
-          className="btn-primary"
+          className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {product ? "Save Changes" : "Add Product"}
+          {saving
+            ? "Saving…"
+            : product
+              ? "Save Changes"
+              : "Add Product"}
         </motion.button>
         <Link href="/admin/products" className="btn-secondary !border-ink/20 !text-ink/60 hover:!border-ink hover:!bg-ink">
           Cancel

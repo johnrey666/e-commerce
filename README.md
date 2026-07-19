@@ -27,7 +27,8 @@ cp .env.example .env.local
 4. For local testing, go to **Authentication → Providers → Email** and turn **off** “Confirm email” so signup logs you in immediately.
 5. Restart `npm run dev`, open `/admin/login`, and use **Sign up** to create your first admin, then **Sign in**.
 
-Products / orders still use local Zustand stores for now — Auth is the first Supabase connection.
+Products, brands, categories, admin auth, and product images use Supabase.
+Cart and orders still use local Zustand stores for now.
 
 ## Pages
 
@@ -48,7 +49,8 @@ Products / orders still use local Zustand stores for now — Auth is the first S
 ## Architecture notes (for future backend integration)
 
 - **`lib/api.ts`** — the data-access layer. All seed data flows through these async functions; swap their bodies for Firestore/REST calls and the UI keeps working.
-- **`lib/store/`** — Zustand stores (catalog, cart, orders, auth), persisted to `localStorage` so the whole app is clickable without a backend.
+- **`lib/store/catalog-store.ts`** — shared Supabase catalog state with realtime updates.
+- **`lib/store/cart-store.ts` / `order-store.ts`** — browser-local cart and orders.
 - **`lib/seed-data.ts`** — placeholder products/brands/categories and the extensible `curatedSections` array (add "Best Sellers", "Staff Picks", etc. here).
 - **Placeholder swap points:**
   - `components/Logo.tsx` — replace the text wordmark with a real logo image.

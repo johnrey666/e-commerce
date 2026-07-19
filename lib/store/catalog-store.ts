@@ -1,8 +1,21 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { fetchBrands, fetchCategories, fetchProducts } from "../api";
+import {
+  createBrand,
+  createCategory,
+  createProduct,
+  fetchBrands,
+  fetchCategories,
+  fetchProducts,
+  patchProduct,
+  removeBrand,
+  removeCategory,
+  removeProduct,
+  renameBrand,
+  renameCategory,
+} from "../api";
+import { createClient } from "../supabase/client";
 import type { Brand, Category, Product } from "../types";
 
 interface CatalogState {
@@ -10,19 +23,26 @@ interface CatalogState {
   brands: Brand[];
   categories: Category[];
   hydrated: boolean;
+  error: string | null;
   initialize: () => Promise<void>;
+  refresh: () => Promise<void>;
 
-  addProduct: (product: Omit<Product, "id" | "createdAt">) => Product;
-  updateProduct: (id: string, patch: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
+  addProduct: (
+    product: Omit<Product, "id" | "createdAt">
+  ) => Promise<Product>;
+  updateProduct: (
+    id: string,
+    patch: Partial<Omit<Product, "id" | "createdAt">>
+  ) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
 
-  addBrand: (name: string) => void;
-  updateBrand: (id: string, name: string) => void;
-  deleteBrand: (id: string) => void;
+  addBrand: (name: string) => Promise<void>;
+  updateBrand: (id: string, name: string) => Promise<void>;
+  deleteBrand: (id: string) => Promise<void>;
 
-  addCategory: (name: string) => void;
-  updateCategory: (id: string, name: string) => void;
-  deleteCategory: (id: string) => void;
+  addCategory: (name: string) => Promise<void>;
+  updateCategory: (id: string, name: string) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
 }
 
 function slugId(name: string): string {
@@ -35,87 +55,140 @@ function slugId(name: string): string {
   );
 }
 
-export const useCatalogStore = create<CatalogState>()(
-  persist(
-    (set, get) => ({
-      products: [],
-      brands: [],
-      categories: [],
-      hydrated: false,
+let initialization: Promise<void> | null = null;
+let realtimeStarted = false;
 
-      // Seeds the store on first visit; subsequent visits use persisted data.
-      initialize: async () => {
-        const state = get();
-        if (state.brands.length === 0) {
-          const [products, brands, categories] = await Promise.all([
-            fetchProducts(),
-            fetchBrands(),
-            fetchCategories(),
-          ]);
-          set({ products, brands, categories, hydrated: true });
-        } else {
-          // Merge seed categories added after the store was first persisted.
-          const seedCategories = await fetchCategories();
-          const existing = new Set(state.categories.map((c) => c.id));
-          const missing = seedCategories.filter((c) => !existing.has(c.id));
-          set({
-            categories:
-              missing.length > 0
-                ? [...missing, ...state.categories]
-                : state.categories,
-            hydrated: true,
-          });
-        }
-      },
+export const useCatalogStore = create<CatalogState>((set, get) => ({
+  products: [],
+  brands: [],
+  categories: [],
+  hydrated: false,
+  error: null,
 
-      addProduct: (data) => {
-        const product: Product = {
-          ...data,
-          id: `p-${Date.now()}`,
-          createdAt: new Date().toISOString(),
-        };
-        set((s) => ({ products: [product, ...s.products] }));
-        return product;
-      },
-      updateProduct: (id, patch) =>
-        set((s) => ({
-          products: s.products.map((p) =>
-            p.id === id ? { ...p, ...patch, id } : p
-          ),
-        })),
-      deleteProduct: (id) =>
-        set((s) => ({ products: s.products.filter((p) => p.id !== id) })),
-
-      addBrand: (name) =>
-        set((s) => ({ brands: [...s.brands, { id: slugId(name), name }] })),
-      updateBrand: (id, name) =>
-        set((s) => ({
-          brands: s.brands.map((b) => (b.id === id ? { ...b, name } : b)),
-        })),
-      deleteBrand: (id) =>
-        set((s) => ({ brands: s.brands.filter((b) => b.id !== id) })),
-
-      addCategory: (name) =>
-        set((s) => ({
-          categories: [...s.categories, { id: slugId(name), name }],
-        })),
-      updateCategory: (id, name) =>
-        set((s) => ({
-          categories: s.categories.map((c) =>
-            c.id === id ? { ...c, name } : c
-          ),
-        })),
-      deleteCategory: (id) =>
-        set((s) => ({ categories: s.categories.filter((c) => c.id !== id) })),
-    }),
-    {
-      // v4: sample products removed — catalog starts empty for real inventory.
-      name: "good-catch-catalog-v4",
-      partialize: (s) => ({
-        products: s.products,
-        brands: s.brands,
-        categories: s.categories,
-      }),
+  refresh: async () => {
+    try {
+      const [products, brands, categories] = await Promise.all([
+        fetchProducts(),
+        fetchBrands(),
+        fetchCategories(),
+      ]);
+      set({ products, brands, categories, hydrated: true, error: null });
+    } catch (error) {
+      set({
+        hydrated: true,
+        error:
+          error instanceof Error ? error.message : "Could not load catalog.",
+      });
     }
-  )
-);
+  },
+
+  initialize: async () => {
+    if (get().hydrated && !get().error) return;
+    if (initialization) return initialization;
+
+    initialization = get()
+      .refresh()
+      .then(() => {
+        if (realtimeStarted || get().error) return;
+        realtimeStarted = true;
+
+        createClient()
+          .channel("global-catalog")
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "products" },
+            () => void get().refresh()
+          )
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "brands" },
+            () => void get().refresh()
+          )
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "categories" },
+            () => void get().refresh()
+          )
+          .subscribe();
+      })
+      .finally(() => {
+        initialization = null;
+      });
+
+    return initialization;
+  },
+
+  addProduct: async (data) => {
+    const product = await createProduct(data);
+    set((state) => ({ products: [product, ...state.products] }));
+    return product;
+  },
+
+  updateProduct: async (id, patch) => {
+    const product = await patchProduct(id, patch);
+    set((state) => ({
+      products: state.products.map((current) =>
+        current.id === id ? product : current
+      ),
+    }));
+  },
+
+  deleteProduct: async (id) => {
+    await removeProduct(id);
+    set((state) => ({
+      products: state.products.filter((product) => product.id !== id),
+    }));
+  },
+
+  addBrand: async (name) => {
+    const brand = await createBrand({ id: slugId(name), name });
+    set((state) => ({
+      brands: [...state.brands, brand].sort((a, b) =>
+        a.name.localeCompare(b.name)
+      ),
+    }));
+  },
+
+  updateBrand: async (id, name) => {
+    await renameBrand(id, name);
+    set((state) => ({
+      brands: state.brands
+        .map((brand) => (brand.id === id ? { ...brand, name } : brand))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+  },
+
+  deleteBrand: async (id) => {
+    await removeBrand(id);
+    set((state) => ({
+      brands: state.brands.filter((brand) => brand.id !== id),
+    }));
+  },
+
+  addCategory: async (name) => {
+    const category = await createCategory({ id: slugId(name), name });
+    set((state) => ({
+      categories: [...state.categories, category].sort((a, b) =>
+        a.name.localeCompare(b.name)
+      ),
+    }));
+  },
+
+  updateCategory: async (id, name) => {
+    await renameCategory(id, name);
+    set((state) => ({
+      categories: state.categories
+        .map((category) =>
+          category.id === id ? { ...category, name } : category
+        )
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+  },
+
+  deleteCategory: async (id) => {
+    await removeCategory(id);
+    set((state) => ({
+      categories: state.categories.filter((category) => category.id !== id),
+    }));
+  },
+}));

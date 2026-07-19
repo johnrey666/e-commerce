@@ -18,9 +18,25 @@ export default function AdminProductsPage() {
     p.name.toLowerCase().includes(query.trim().toLowerCase())
   );
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (window.confirm(`Delete "${name}"? This cannot be undone.`)) {
-      deleteProduct(id);
+      try {
+        await deleteProduct(id);
+      } catch (error) {
+        window.alert(
+          error instanceof Error ? error.message : "Could not delete product."
+        );
+      }
+    }
+  };
+
+  const toggleSale = async (id: string, onSale: boolean) => {
+    try {
+      await updateProduct(id, { onSale: !onSale });
+    } catch (error) {
+      window.alert(
+        error instanceof Error ? error.message : "Could not update product."
+      );
     }
   };
 
@@ -145,7 +161,7 @@ export default function AdminProductsPage() {
                           </span>
                         )}
                         <button
-                          onClick={() => updateProduct(p.id, { onSale: !p.onSale })}
+                          onClick={() => void toggleSale(p.id, p.onSale)}
                           title="Toggle 'On Sale' feature flag"
                           className={`px-2 py-1 text-[8px] font-medium uppercase tracking-[0.2em] transition-colors ${
                             p.onSale
@@ -166,7 +182,7 @@ export default function AdminProductsPage() {
                           Edit
                         </Link>
                         <button
-                          onClick={() => handleDelete(p.id, p.name)}
+                          onClick={() => void handleDelete(p.id, p.name)}
                           aria-label={`Delete ${p.name}`}
                           className="grid size-8 place-items-center text-ink/35 transition-colors hover:bg-brand-soft hover:text-brand"
                         >

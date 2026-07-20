@@ -63,20 +63,30 @@ export function ProductCarousel({
           </div>
         </Reveal>
 
-        <div
-          ref={scroller}
-          className="no-scrollbar flex snap-x gap-5 overflow-x-auto sm:gap-6"
-        >
-          {products.map((p, i) => (
-            <Reveal
-              key={p.id}
-              delay={Math.min(i * 0.05, 0.2)}
-              className="w-[13rem] shrink-0 snap-start sm:w-[16rem]"
-            >
-              <ProductCard product={p} brandName={brandName(p.brandId)} index={i} />
-            </Reveal>
-          ))}
-        </div>
+        {products.length <= 2 ? (
+          <div className="grid max-w-md grid-cols-2 gap-3 sm:max-w-lg sm:gap-5">
+            {products.map((p, i) => (
+              <Reveal key={p.id} delay={Math.min(i * 0.05, 0.2)} className="min-w-0">
+                <ProductCard product={p} brandName={brandName(p.brandId)} index={i} />
+              </Reveal>
+            ))}
+          </div>
+        ) : (
+          <div
+            ref={scroller}
+            className="no-scrollbar flex snap-x gap-5 overflow-x-auto sm:gap-6"
+          >
+            {products.map((p, i) => (
+              <Reveal
+                key={p.id}
+                delay={Math.min(i * 0.05, 0.2)}
+                className="w-[13rem] shrink-0 snap-start sm:w-[16rem]"
+              >
+                <ProductCard product={p} brandName={brandName(p.brandId)} index={i} />
+              </Reveal>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

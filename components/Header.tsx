@@ -96,7 +96,7 @@ export function Header() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
               onClick={() => setOpen(false)}
-              className="fixed inset-0 z-30 bg-ink/30 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-sm md:hidden"
               aria-hidden
             />
             <motion.nav
@@ -105,7 +105,7 @@ export function Header() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", stiffness: 340, damping: 36 }}
-              className="fixed inset-x-0 z-40 border-t border-ink/10 bg-paper px-6 pb-4 pt-2 md:hidden"
+              className="fixed inset-x-0 z-[60] border-t border-ink/10 bg-paper px-6 pb-4 pt-2 md:hidden"
               style={{ bottom: MOBILE_BAR_OFFSET }}
             >
               <div className="mx-auto mb-1 mt-2 h-0.5 w-10 rounded-full bg-ink/15" aria-hidden />
@@ -163,7 +163,7 @@ export function Header() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
               onClick={() => setSearchOpen(false)}
-              className="fixed inset-0 z-30 bg-ink/30 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-sm md:hidden"
               aria-hidden
             />
             <motion.div
@@ -173,7 +173,7 @@ export function Header() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", stiffness: 340, damping: 36 }}
-              className="fixed inset-x-0 z-40 border-t border-ink/10 bg-paper px-6 pb-6 pt-2 md:hidden"
+              className="fixed inset-x-0 z-[60] border-t border-ink/10 bg-paper px-6 pb-6 pt-2 md:hidden"
               style={{ bottom: MOBILE_BAR_OFFSET }}
             >
               <div className="mx-auto mb-4 mt-2 h-0.5 w-10 rounded-full bg-ink/15" aria-hidden />
@@ -210,7 +210,7 @@ export function Header() {
       {/* Mobile bottom bar — menu + search; the bag lives in the header */}
       {!hideMobileBar && (
         <div
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-paper/95 backdrop-blur-xl md:hidden"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-ink/10 bg-paper/95 backdrop-blur-xl md:hidden"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
           <div className="grid h-14 grid-cols-2">

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
+import { AiAssistant } from "@/components/AiAssistant";
 import { HeroGallery } from "@/components/home/HeroGallery";
 import { ProductCarousel } from "@/components/home/ProductCarousel";
 import { fadeUp, Reveal } from "@/components/Reveal";
@@ -213,6 +214,8 @@ export default function HomePage() {
           </Reveal>
         </div>
       </section>
+
+      <AiAssistant />
     </div>
   );
 }

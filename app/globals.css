@@ -104,3 +104,47 @@ body {
 .rule-diamond::after {
   margin-left: 1.25rem;
 }
+
+/* Thin rainbow trail that runs around the hero primary CTA */
+@property --glow-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.btn-running-glow {
+  position: relative;
+  isolation: isolate;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--glow-angle),
+    transparent 0%,
+    transparent 72%,
+    #ff0040 78%,
+    #ff8c00 82%,
+    #ffee00 86%,
+    #00e676 90%,
+    #00b0ff 94%,
+    #b388ff 97%,
+    transparent 100%
+  );
+  animation: btn-glow-spin 2.2s linear infinite;
+}
+
+.btn-running-glow > a {
+  display: inline-flex;
+  width: 100%;
+}
+
+@keyframes btn-glow-spin {
+  to {
+    --glow-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-running-glow {
+    animation: none;
+    background: linear-gradient(90deg, #ff0040, #00b0ff);
+  }
+}

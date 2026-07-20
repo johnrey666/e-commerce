@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { HeroGallery } from "@/components/home/HeroGallery";
@@ -10,6 +11,12 @@ import { useCatalog, useLandingContent } from "@/lib/hooks";
 import { scatteredSample } from "@/lib/sample-images";
 import { curatedSections } from "@/lib/seed-data";
 import type { CuratedSection, Product } from "@/lib/types";
+
+const HoodieViewer = dynamic(
+  () =>
+    import("@/components/home/HoodieViewer").then((m) => m.HoodieViewer),
+  { ssr: false }
+);
 
 function sectionProducts(section: CuratedSection, products: Product[]) {
   switch (section.filter) {
@@ -93,12 +100,14 @@ export default function HomePage() {
             transition={{ ...fadeUp.transition, delay: 0.24 }}
             className="mt-10 flex w-full max-w-xs flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:justify-center sm:gap-4"
           >
-            <Link
-              href="/shop"
-              className="inline-flex w-full items-center justify-center bg-white px-10 py-4 text-[11px] font-medium uppercase tracking-[0.28em] text-ink transition-all duration-500 ease-out hover:bg-brand hover:text-white active:scale-[0.99] sm:w-auto"
-            >
-              Explore the Collection
-            </Link>
+            <span className="btn-running-glow inline-flex w-full sm:w-auto">
+              <Link
+                href="/shop"
+                className="inline-flex w-full items-center justify-center bg-white px-10 py-4 text-[11px] font-medium uppercase tracking-[0.28em] text-ink transition-all duration-500 ease-out hover:bg-brand hover:text-white active:scale-[0.99] sm:w-auto"
+              >
+                Explore the Collection
+              </Link>
+            </span>
             <Link
               href="/shop?section=new-arrivals"
               className="inline-flex w-full items-center justify-center border border-white/50 px-10 py-4 text-[11px] font-medium uppercase tracking-[0.28em] text-white transition-all duration-500 ease-out hover:border-white hover:bg-white hover:text-ink active:scale-[0.99] sm:w-auto"
@@ -182,8 +191,9 @@ export default function HomePage() {
       </section>
 
       {/* ——— Manifesto ——— */}
-      <section className="border-t border-ink/8 bg-ink py-24 sm:py-32">
-        <div className="mx-auto max-w-2xl px-5 text-center sm:px-10">
+      <section className="relative overflow-hidden border-t border-ink/8 bg-ink py-24 sm:py-32">
+        <HoodieViewer />
+        <div className="pointer-events-none relative z-10 mx-auto max-w-2xl px-5 text-center sm:px-10">
           <Reveal>
             <p className="text-[9px] font-medium uppercase tracking-[0.45em] text-paper/40">
               The Brand Philosophy

@@ -289,7 +289,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const supabase = createClient();
       const origin = window.location.origin;
-      const next = redirectTo ?? "/account/orders";
+      const next = redirectTo ?? "/";
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {

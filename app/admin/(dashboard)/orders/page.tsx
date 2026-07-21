@@ -3,8 +3,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { OrderChatModal } from "@/components/OrderChatModal";
+import { ProductImage } from "@/components/ProductImage";
 import { StarRating } from "@/components/StarRating";
-import { ChatIcon } from "@/components/icons";
+import { ChatIcon, ChevronDownIcon } from "@/components/icons";
 import { formatPrice } from "@/lib/format";
 import { useMounted } from "@/lib/hooks";
 import { fetchReviewsForOrders } from "@/lib/reviews";
@@ -155,7 +156,7 @@ export default function AdminOrdersPage() {
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`px-5 py-2.5 text-[10px] font-medium uppercase tracking-[0.24em] transition-all duration-300 ${
+            className={`px-4 py-2 text-[9px] font-medium uppercase tracking-[0.22em] transition-all duration-300 sm:px-5 sm:py-2.5 sm:text-[10px] sm:tracking-[0.24em] ${
               statusFilter === s
                 ? "bg-ink text-white"
                 : "border border-ink/15 text-ink/50 hover:border-ink hover:text-ink"
@@ -186,42 +187,70 @@ export default function AdminOrdersPage() {
           </p>
         </div>
       ) : (
-        <ul className="mt-8 space-y-4">
-          {(mounted ? filtered : []).map((order) => {
+        <ul className="mt-8 grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {(mounted ? filtered : []).map((order, index) => {
             const expanded = expandedId === order.id;
+            const cover = order.items[0]?.image ?? "";
             return (
-              <li
+              <motion.li
                 key={order.id}
-                className="overflow-hidden border border-ink/10 bg-surface"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03, duration: 0.35 }}
+                className={`group/card overflow-hidden border border-ink/10 bg-surface ${
+                  expanded ? "col-span-2 md:col-span-2 lg:col-span-2" : ""
+                }`}
               >
                 <button
+                  type="button"
                   onClick={() => setExpandedId(expanded ? null : order.id)}
                   aria-expanded={expanded}
-                  className="flex w-full flex-wrap items-center justify-between gap-3 px-6 py-5 text-left transition-colors hover:bg-brand-faint sm:px-7"
+                  className="w-full text-left"
                 >
-                  <div>
-                    <p className="font-display text-lg font-medium text-ink">
-                      {order.id}
-                    </p>
-                    <p className="mt-0.5 text-[12px] text-ink/45">
-                      {order.customer.firstName} {order.customer.lastName} ·{" "}
-                      {new Date(order.createdAt).toLocaleString()}
-                    </p>
+                  <div className="relative aspect-square overflow-hidden bg-brand-soft">
+                    {cover ? (
+                      <ProductImage
+                        image={cover}
+                        alt={order.items[0]?.name ?? order.id}
+                        className="[&_img]:transition-transform [&_img]:duration-700 [&_img]:group-hover/card:scale-[1.04]"
+                      />
+                    ) : null}
+                    <div className="absolute left-1.5 top-1.5 flex max-w-[calc(100%-0.75rem)] flex-wrap gap-1">
+                      <span
+                        className={`px-1.5 py-0.5 text-[7px] font-medium uppercase tracking-[0.14em] ${PAYMENT_STYLES[order.paymentStatus]}`}
+                      >
+                        {order.paymentStatus}
+                      </span>
+                      <span
+                        className={`px-1.5 py-0.5 text-[7px] font-medium uppercase tracking-[0.14em] ${STATUS_STYLES[order.status]}`}
+                      >
+                        {order.status}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.25em] ${PAYMENT_STYLES[order.paymentStatus]}`}
-                    >
-                      {order.paymentStatus}
-                    </span>
-                    <span
-                      className={`px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.25em] ${STATUS_STYLES[order.status]}`}
-                    >
-                      {order.status}
-                    </span>
-                    <span className="font-display text-xl font-medium text-ink">
+                  <div className="px-2.5 py-2.5 sm:px-3 sm:py-3">
+                    <div className="flex items-start justify-between gap-1.5">
+                      <p className="truncate font-display text-[13px] font-medium leading-tight text-ink sm:text-sm">
+                        {order.id}
+                      </p>
+                      <ChevronDownIcon
+                        width={12}
+                        height={12}
+                        strokeWidth={1.5}
+                        className={`mt-0.5 shrink-0 text-ink/35 transition-transform ${
+                          expanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </div>
+                    <p className="mt-0.5 truncate text-[10px] text-ink/45">
+                      {order.customer.firstName} {order.customer.lastName}
+                    </p>
+                    <p className="mt-1.5 font-display text-sm font-medium text-ink">
                       {formatPrice(order.total)}
-                    </span>
+                    </p>
+                    <p className="mt-0.5 text-[9px] uppercase tracking-[0.12em] text-ink/30">
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
                 </button>
 
@@ -232,113 +261,106 @@ export default function AdminOrdersPage() {
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.25 }}
-                      className="overflow-hidden"
+                      className="overflow-hidden border-t border-ink/10"
                     >
-                      <div className="grid gap-8 border-t border-ink/10 px-6 py-6 sm:px-7 md:grid-cols-2">
-                        <div>
-                          <h3 className="mb-3 text-[9px] font-medium uppercase tracking-[0.3em] text-ink/45">
-                            Items
-                          </h3>
-                          <ul className="space-y-4 text-sm">
-                            {order.items.map((item) => {
-                              const review = reviewFor(
-                                order.id,
-                                item.productId
-                              );
-                              return (
-                                <li
-                                  key={`${item.productId}-${item.size ?? ""}`}
-                                >
-                                  <div className="flex justify-between gap-3">
+                      <div className="space-y-3 px-3 py-3 sm:px-4 sm:py-4">
+                        <ul className="space-y-3 text-[12px]">
+                          {order.items.map((item) => {
+                            const review = reviewFor(
+                              order.id,
+                              item.productId
+                            );
+                            return (
+                              <li
+                                key={`${item.productId}-${item.size ?? ""}`}
+                                className="flex gap-2.5"
+                              >
+                                <div className="relative h-12 w-10 shrink-0 overflow-hidden bg-brand-soft">
+                                  {item.image ? (
+                                    <ProductImage
+                                      image={item.image}
+                                      alt={item.name}
+                                    />
+                                  ) : null}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex justify-between gap-2">
                                     <span className="text-ink/70">
                                       {item.name}
                                       {item.size ? ` (${item.size})` : ""} ×{" "}
                                       {item.quantity}
                                     </span>
-                                    <span className="font-medium text-ink">
+                                    <span className="shrink-0 font-medium text-ink">
                                       {formatPrice(
                                         item.unitPrice * item.quantity
                                       )}
                                     </span>
                                   </div>
                                   {review ? (
-                                    <div className="mt-2 border-l-2 border-brand/30 pl-3">
+                                    <div className="mt-1.5">
                                       <StarRating
                                         value={review.rating}
-                                        size={12}
+                                        size={11}
                                       />
                                       {review.body ? (
-                                        <p className="mt-1 text-[12px] leading-relaxed text-ink/55">
+                                        <p className="mt-0.5 text-[11px] leading-snug text-ink/50">
                                           {review.body}
                                         </p>
                                       ) : null}
-                                      <p className="mt-1 text-[10px] text-ink/35">
-                                        {review.reviewerName}
-                                      </p>
                                     </div>
                                   ) : (
-                                    <p className="mt-1 text-[11px] text-ink/30">
+                                    <p className="mt-1 text-[10px] text-ink/30">
                                       No review yet
                                     </p>
                                   )}
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                        <div className="space-y-2 text-sm text-ink/70">
-                          <h3 className="text-[9px] font-medium uppercase tracking-[0.3em] text-ink/45">
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+
+                        <div className="border-t border-ink/8 pt-3 text-[11px] leading-relaxed text-ink/55">
+                          <p className="text-[8px] font-medium uppercase tracking-[0.28em] text-ink/35">
                             Customer
-                          </h3>
+                          </p>
+                          <p className="mt-1.5">{order.customer.email}</p>
                           <p>{order.customer.contactNumber}</p>
-                          <p>{order.customer.email}</p>
                           <p>
                             {order.customer.barangay}, {order.customer.city}
                           </p>
                           <p>
-                            {order.customer.region} {order.customer.postalCode}
+                            {order.customer.shippingCarrier} ·{" "}
+                            {order.customer.region}
                           </p>
-                          <p>{order.customer.country}</p>
-                          <p>Ship via {order.customer.shippingCarrier}</p>
-                          {order.customer.pinnedLocation && (
-                            <p className="text-ink/45">
-                              Pinned: {order.customer.pinnedLocation}
-                            </p>
-                          )}
-                          {order.customer.notes && (
-                            <p className="text-ink/45">
-                              Notes: {order.customer.notes}
-                            </p>
-                          )}
                         </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2.5 border-t border-ink/10 px-6 py-5 sm:px-7">
-                        <span className="mr-2 text-[9px] font-medium uppercase tracking-[0.3em] text-ink/45">
-                          Set Status
-                        </span>
-                        {STATUSES.map((s) => (
-                          <button
-                            key={s}
-                            onClick={() => updateStatus(order.id, s)}
-                            disabled={order.status === s}
-                            className={`px-4 py-2 text-[9px] font-medium uppercase tracking-[0.22em] transition-all duration-300 ${
-                              order.status === s
-                                ? `${STATUS_STYLES[s]} cursor-default`
-                                : "border border-ink/15 text-ink/50 hover:border-ink hover:text-ink"
-                            }`}
-                          >
-                            {s}
-                          </button>
-                        ))}
+
+                        <div className="flex flex-wrap gap-1.5 border-t border-ink/8 pt-3">
+                          {STATUSES.map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => updateStatus(order.id, s)}
+                              disabled={order.status === s}
+                              className={`px-2.5 py-1.5 text-[8px] font-medium uppercase tracking-[0.16em] transition-all ${
+                                order.status === s
+                                  ? `${STATUS_STYLES[s]} cursor-default`
+                                  : "border border-ink/15 text-ink/45 hover:border-ink hover:text-ink"
+                              }`}
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+
                         {userId && (
                           <button
                             type="button"
                             onClick={() => setChatOrder(order)}
-                            className="ml-auto inline-flex items-center gap-2 border border-ink/15 px-4 py-2 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/60 hover:border-ink hover:text-ink"
+                            className="flex w-full items-center justify-center gap-2 border border-ink/15 py-2.5 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/65 hover:border-ink hover:text-ink"
                           >
                             <ChatIcon
-                              width={13}
-                              height={13}
+                              width={12}
+                              height={12}
                               strokeWidth={1.5}
                             />
                             Chat
@@ -348,7 +370,7 @@ export default function AdminOrdersPage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </li>
+              </motion.li>
             );
           })}
         </ul>

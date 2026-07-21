@@ -9,7 +9,7 @@ import { useAuthStore } from "@/lib/store/auth-store";
 export default function SignupClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/account/orders";
+  const next = searchParams.get("next") || "/";
 
   const initialize = useAuthStore((s) => s.initialize);
   const initialized = useAuthStore((s) => s.initialized);

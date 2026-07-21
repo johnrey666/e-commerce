@@ -101,9 +101,7 @@ export function OrderItemReview({
         onChange={(e) => setBody(e.target.value)}
         rows={compact ? 2 : 3}
         placeholder="Optional note…"
-        className={`mt-2 w-full resize-none border border-ink/12 bg-paper px-2.5 py-2 text-ink/80 outline-none placeholder:text-ink/30 focus:border-ink/35 ${
-          compact ? "text-[11px]" : "text-[12px]"
-        }`}
+        className="mt-2 w-full resize-none border border-ink/12 bg-paper px-2.5 py-2 text-base leading-snug text-ink/80 outline-none placeholder:text-ink/30 focus:border-ink/35"
       />
       {error && <p className="mt-1 text-[11px] text-accent">{error}</p>}
       <div className="mt-2 flex gap-2">

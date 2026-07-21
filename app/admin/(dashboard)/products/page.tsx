@@ -69,7 +69,7 @@ export default function AdminProductsPage() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search products…"
           aria-label="Search products"
-          className="input-field !pl-11"
+          className="input-field !pl-11 text-base"
         />
       </div>
 
@@ -90,122 +90,107 @@ export default function AdminProductsPage() {
             Add Your First Product
           </Link>
         </div>
+      ) : ready && filtered.length === 0 ? (
+        <p className="mt-10 text-center text-[13px] text-ink/45">
+          No products match your search.
+        </p>
       ) : (
-        <div className="mt-8 overflow-x-auto border border-ink/10 bg-surface">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-ink/10 text-[9px] uppercase tracking-[0.25em] text-ink/45">
-                <th className="px-6 py-4 font-medium">Product</th>
-                <th className="px-6 py-4 font-medium">Category / Brand</th>
-                <th className="px-6 py-4 font-medium">Price</th>
-                <th className="px-6 py-4 font-medium">Stock</th>
-                <th className="px-6 py-4 font-medium">Flags</th>
-                <th className="px-6 py-4 font-medium">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-ink/8">
-              {filtered.map((p) => {
-                const percent = discountPercent(p);
-                return (
-                  <tr key={p.id} className="transition-colors hover:bg-brand-faint">
-                    <td className="px-6 py-3.5">
-                      <div className="flex items-center gap-4">
-                        <div className="h-14 w-11 shrink-0 overflow-hidden border border-ink/10 bg-brand-soft">
-                          <ProductImage image={p.images[0]} alt="" />
-                        </div>
-                        <div>
-                          <Link
-                            href={`/admin/products/${p.id}/edit`}
-                            className="font-medium text-ink transition-colors hover:text-brand"
-                          >
-                            {p.name}
-                          </Link>
-                          <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-ink/40">
-                            {p.condition}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3.5 text-[13px] text-ink/55">
-                      {categories
-                        .filter((c) => p.categoryIds.includes(c.id))
-                        .map((c) => c.name)
-                        .join(", ") || "—"}{" "}
-                      · {brands.find((b) => b.id === p.brandId)?.name ?? "—"}
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <span className="font-medium text-ink">
-                        {formatPrice(effectivePrice(p))}
+        <ul className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {filtered.map((p) => {
+            const percent = discountPercent(p);
+            const brandName = brands.find((b) => b.id === p.brandId)?.name;
+            const categoryLabel =
+              categories
+                .filter((c) => p.categoryIds.includes(c.id))
+                .map((c) => c.name)
+                .join(", ") || "—";
+
+            return (
+              <li
+                key={p.id}
+                className="group/card flex flex-col overflow-hidden border border-ink/10 bg-surface"
+              >
+                <Link
+                  href={`/admin/products/${p.id}/edit`}
+                  className="relative aspect-[3/4] overflow-hidden bg-brand-soft"
+                >
+                  <ProductImage
+                    image={p.images[0]}
+                    alt={p.name}
+                    className="[&_img]:transition-transform [&_img]:duration-700 [&_img]:group-hover/card:scale-[1.03]"
+                  />
+                  <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+                    {p.isNewArrival && (
+                      <span className="bg-ink px-1.5 py-0.5 text-[7px] font-medium uppercase tracking-[0.16em] text-white">
+                        New
                       </span>
-                      {percent != null && (
-                        <span className="ml-1.5 text-xs text-brand">
-                          -{percent}%
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <span
-                        className={
-                          p.stock <= 1
-                            ? "font-semibold text-brand"
-                            : "text-ink/70"
-                        }
-                      >
-                        {p.stock}
+                    )}
+                    {percent != null && (
+                      <span className="bg-accent px-1.5 py-0.5 text-[7px] font-medium uppercase tracking-[0.16em] text-white">
+                        −{percent}%
                       </span>
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <div className="flex flex-wrap gap-1.5">
-                        {p.isNewArrival && (
-                          <span className="bg-ink px-2 py-1 text-[8px] font-medium uppercase tracking-[0.2em] text-white">
-                            New
-                          </span>
-                        )}
-                        <button
-                          onClick={() => void toggleSale(p.id, p.onSale)}
-                          title="Toggle 'On Sale' feature flag"
-                          className={`px-2 py-1 text-[8px] font-medium uppercase tracking-[0.2em] transition-colors ${
-                            p.onSale
-                              ? "bg-brand text-white"
-                              : "border border-ink/15 text-ink/40 hover:border-ink hover:text-ink"
-                          }`}
-                        >
-                          Sale
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          href={`/admin/products/${p.id}/edit`}
-                          className="border border-ink/15 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-ink/60 transition-all duration-300 hover:border-ink hover:text-ink"
-                        >
-                          Edit
-                        </Link>
-                        <button
-                          onClick={() => void handleDelete(p.id, p.name)}
-                          aria-label={`Delete ${p.name}`}
-                          className="grid size-8 place-items-center text-ink/35 transition-colors hover:bg-brand-soft hover:text-brand"
-                        >
-                          <TrashIcon width={15} height={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {ready && products.length > 0 && filtered.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-14 text-center text-[13px] text-ink/45">
-                    No products match your search.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    )}
+                  </div>
+                </Link>
+
+                <div className="flex flex-1 flex-col px-2.5 py-3 sm:px-3">
+                  <p className="truncate text-[9px] uppercase tracking-[0.18em] text-ink/40">
+                    {brandName ?? "—"}
+                  </p>
+                  <Link
+                    href={`/admin/products/${p.id}/edit`}
+                    className="mt-1 line-clamp-2 font-display text-[14px] font-medium leading-snug text-ink hover:text-brand"
+                  >
+                    {p.name}
+                  </Link>
+                  <p className="mt-1 truncate text-[10px] text-ink/40">
+                    {categoryLabel}
+                  </p>
+                  <div className="mt-2 flex items-baseline justify-between gap-2">
+                    <p className="font-display text-[15px] font-medium text-ink">
+                      {formatPrice(effectivePrice(p))}
+                    </p>
+                    <p
+                      className={`text-[10px] uppercase tracking-[0.14em] ${
+                        p.stock <= 1 ? "font-semibold text-brand" : "text-ink/40"
+                      }`}
+                    >
+                      Stock {p.stock}
+                    </p>
+                  </div>
+
+                  <div className="mt-auto flex items-center gap-1.5 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => void toggleSale(p.id, p.onSale)}
+                      className={`flex-1 py-2 text-[8px] font-medium uppercase tracking-[0.18em] transition-colors ${
+                        p.onSale
+                          ? "bg-brand text-white"
+                          : "border border-ink/15 text-ink/45 hover:border-ink hover:text-ink"
+                      }`}
+                    >
+                      Sale
+                    </button>
+                    <Link
+                      href={`/admin/products/${p.id}/edit`}
+                      className="flex-1 border border-ink/15 py-2 text-center text-[8px] font-medium uppercase tracking-[0.18em] text-ink/55 hover:border-ink hover:text-ink"
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(p.id, p.name)}
+                      aria-label={`Delete ${p.name}`}
+                      className="grid size-8 shrink-0 place-items-center text-ink/30 hover:bg-brand-soft hover:text-brand"
+                    >
+                      <TrashIcon width={14} height={14} />
+                    </button>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

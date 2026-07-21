@@ -21,6 +21,8 @@ const ADMIN_LINKS = [
   { href: "/admin/team", label: "Admins" },
 ];
 
+const MOBILE_BAR_OFFSET = "calc(3.5rem + env(safe-area-inset-bottom))";
+
 export default function AdminLayout({
   children,
 }: {
@@ -53,6 +55,10 @@ export default function AdminLayout({
     }
   }, [mounted, initialized, isAdmin, router]);
 
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
   if (!mounted || !initialized || !isAdmin) {
     return (
       <div className="grid min-h-screen place-items-center bg-paper">
@@ -77,8 +83,8 @@ export default function AdminLayout({
               <p className="mt-0.5 text-[11px] text-ink/55">{email}</p>
             </div>
           </div>
-          <div className="hidden items-center gap-4 md:flex">
-            <Link href="/" className="nav-link group relative">
+          <div className="flex items-center gap-3 md:gap-4">
+            <Link href="/" className="nav-link group relative hidden md:inline-block">
               View Store
               <span className="absolute -bottom-1.5 left-0 h-px w-0 bg-ink transition-all duration-500 group-hover:w-full" />
             </Link>
@@ -95,24 +101,11 @@ export default function AdminLayout({
                 await logout();
                 router.push("/login");
               }}
-              className="border border-ink/12 px-5 py-2 text-[10px] font-medium uppercase tracking-[0.24em] text-ink/55 transition-all duration-300 hover:border-ink hover:text-ink"
+              className="hidden border border-ink/12 px-5 py-2 text-[10px] font-medium uppercase tracking-[0.24em] text-ink/55 transition-all duration-300 hover:border-ink hover:text-ink md:inline-block"
             >
               Log Out
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-label={menuOpen ? "Close admin menu" : "Open admin menu"}
-            aria-expanded={menuOpen}
-            className="grid size-10 place-items-center border border-ink/12 text-ink/65 md:hidden"
-          >
-            {menuOpen ? (
-              <CloseIcon width={18} height={18} strokeWidth={1.5} />
-            ) : (
-              <MenuIcon width={18} height={18} strokeWidth={1.5} />
-            )}
-          </button>
         </div>
         <nav
           aria-label="Admin"
@@ -143,17 +136,35 @@ export default function AdminLayout({
             );
           })}
         </nav>
-        <AnimatePresence>
-          {menuOpen && (
+      </header>
+
+      <main className="mx-auto max-w-[90rem] px-5 py-10 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-10 sm:py-14 md:pb-14">
+        {children}
+      </main>
+
+      {/* Mobile menu sheet — above bottom bar */}
+      <AnimatePresence>
+        {menuOpen && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Close menu"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-ink/25 md:hidden"
+              onClick={() => setMenuOpen(false)}
+            />
             <motion.nav
               aria-label="Admin mobile"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden border-t border-ink/10 bg-paper md:hidden"
+              initial={{ y: "100%", opacity: 0.6 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="fixed inset-x-0 z-50 max-h-[70vh] overflow-y-auto border-t border-ink/10 bg-paper md:hidden"
+              style={{ bottom: MOBILE_BAR_OFFSET }}
             >
-              <div className="px-5 py-3">
+              <div className="px-5 py-2">
                 {ADMIN_LINKS.map((link) => {
                   const active =
                     link.href === "/admin"
@@ -174,16 +185,13 @@ export default function AdminLayout({
                   );
                 })}
                 <div className="grid grid-cols-2 gap-3 py-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setProfileOpen(true);
-                    }}
+                  <Link
+                    href="/"
+                    onClick={() => setMenuOpen(false)}
                     className="border border-ink/15 px-3 py-3 text-center text-[9px] font-medium uppercase tracking-[0.2em] text-ink/65"
                   >
-                    Profile
-                  </button>
+                    View Store
+                  </Link>
                   <button
                     type="button"
                     onClick={async () => {
@@ -198,12 +206,49 @@ export default function AdminLayout({
                 </div>
               </div>
             </motion.nav>
-          )}
-        </AnimatePresence>
-      </header>
-      <main className="mx-auto max-w-[90rem] px-5 py-10 sm:px-10 sm:py-14">
-        {children}
-      </main>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile bottom bar */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-ink/10 bg-paper/95 backdrop-blur-xl md:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="grid h-14 grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label={menuOpen ? "Close menu" : "Menu"}
+            aria-expanded={menuOpen}
+            className="flex flex-col items-center justify-center gap-1 text-ink/70 transition-colors active:text-ink"
+          >
+            {menuOpen ? (
+              <CloseIcon width={18} height={18} strokeWidth={1.5} />
+            ) : (
+              <MenuIcon width={18} height={18} strokeWidth={1.5} />
+            )}
+            <span className="text-[8px] font-medium uppercase tracking-[0.3em]">
+              Menu
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              setProfileOpen(true);
+            }}
+            aria-label="Profile"
+            className="flex flex-col items-center justify-center gap-1 border-l border-ink/10 text-ink/70 transition-colors active:text-ink"
+          >
+            <UserIcon width={18} height={18} strokeWidth={1.5} />
+            <span className="text-[8px] font-medium uppercase tracking-[0.3em]">
+              Profile
+            </span>
+          </button>
+        </div>
+      </div>
+
       <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );

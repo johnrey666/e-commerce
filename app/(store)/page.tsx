@@ -7,6 +7,7 @@ import Link from "next/link";
 import { AiAssistant } from "@/components/AiAssistant";
 import { HeroGallery } from "@/components/home/HeroGallery";
 import { ProductCarousel } from "@/components/home/ProductCarousel";
+import { ReviewsPreview } from "@/components/home/ReviewsPreview";
 import { StoreInfo } from "@/components/home/StoreInfo";
 import { fadeUp, Reveal } from "@/components/Reveal";
 import { useCatalog, useLandingContent } from "@/lib/hooks";
@@ -220,6 +221,8 @@ export default function HomePage() {
       </section>
 
       <StoreInfo />
+
+      <ReviewsPreview />
 
       <AiAssistant />
     </div>

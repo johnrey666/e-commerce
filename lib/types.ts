@@ -125,6 +125,19 @@ export interface OrderMessage {
   createdAt: string;
 }
 
+/** Shop / product review left from a paid order. */
+export interface ProductReview {
+  id: string;
+  orderId: string;
+  productId: string;
+  userId: string;
+  rating: number;
+  body?: string;
+  productName: string;
+  reviewerName: string;
+  createdAt: string;
+}
+
 /** Curated homepage sections — extensible: add entries to seed data. */
 export interface CuratedSection {
   id: string;

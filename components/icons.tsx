@@ -163,3 +163,18 @@ export const UserIcon = (p: IconProps) => (
     <path d="M4 20c1.8-3.5 5-5 8-5s6.2 1.5 8 5" />
   </svg>
 );
+
+/** Five-point star — reviews. */
+export const StarIcon = (p: IconProps & { filled?: boolean }) => {
+  const { filled, ...rest } = p;
+  return (
+    <svg
+      {...base}
+      {...rest}
+      fill={filled ? "currentColor" : "none"}
+      stroke={filled ? "none" : "currentColor"}
+    >
+      <path d="m12 3.2 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.5l-4.8 2.6.9-5.4-3.9-3.8 5.4-.8L12 3.2Z" />
+    </svg>
+  );
+};

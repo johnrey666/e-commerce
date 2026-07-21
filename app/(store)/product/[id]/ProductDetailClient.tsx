@@ -2,14 +2,17 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeftIcon } from "@/components/icons";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { Reveal } from "@/components/Reveal";
+import { StarRating } from "@/components/StarRating";
 import { discountPercent, effectivePrice, formatPrice } from "@/lib/format";
 import { useCatalog } from "@/lib/hooks";
+import { averageRating, fetchReviewsForProduct } from "@/lib/reviews";
 import { useCartStore } from "@/lib/store/cart-store";
+import type { ProductReview } from "@/lib/types";
 
 export function ProductDetailClient({ id }: { id: string }) {
   const { products, brands, categories, ready } = useCatalog();
@@ -20,6 +23,22 @@ export function ProductDetailClient({ id }: { id: string }) {
   const [imageIndex, setImageIndex] = useState(0);
   const [size, setSize] = useState<string | undefined>(undefined);
   const [added, setAdded] = useState(false);
+  const [reviews, setReviews] = useState<ProductReview[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await fetchReviewsForProduct(id);
+        if (!cancelled) setReviews(rows);
+      } catch {
+        if (!cancelled) setReviews([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   if (!ready) {
     return (
@@ -54,6 +73,7 @@ export function ProductDetailClient({ id }: { id: string }) {
   const percent = discountPercent(product);
   const soldOut = product.stock <= 0;
   const chosenSize = size ?? product.sizes[0];
+  const avg = averageRating(reviews);
 
   const related = products
     .filter(
@@ -162,6 +182,16 @@ export function ProductDetailClient({ id }: { id: string }) {
               </span>
             )}
           </div>
+
+          {avg != null && (
+            <div className="mt-3 flex items-center gap-2">
+              <StarRating value={Math.round(avg)} size={14} />
+              <span className="text-[12px] text-ink/45">
+                {avg.toFixed(1)} · {reviews.length}{" "}
+                {reviews.length === 1 ? "review" : "reviews"}
+              </span>
+            </div>
+          )}
 
           <div className="mt-7 h-px w-16 bg-ink/15" />
 
@@ -282,6 +312,33 @@ export function ProductDetailClient({ id }: { id: string }) {
           </button>
         </div>
       </motion.div>
+
+      {/* Reviews */}
+      {reviews.length > 0 && (
+        <section className="mt-20 border-t border-ink/8 pt-14 sm:mt-24">
+          <Reveal>
+            <p className="eyebrow">Reviews</p>
+            <h2 className="section-title mt-4">What buyers say</h2>
+          </Reveal>
+          <ul className="mt-10 divide-y divide-ink/8 border-y border-ink/10">
+            {reviews.map((review) => (
+              <li key={review.id} className="py-6">
+                <StarRating value={review.rating} size={13} />
+                <p className="mt-3 font-display text-lg font-medium text-ink">
+                  {review.body?.trim()
+                    ? `“${review.body.trim()}”`
+                    : "Loved this piece."}
+                </p>
+                <p className="mt-2 text-[12px] text-ink/45">
+                  {review.reviewerName}
+                  <span className="mx-1.5 text-ink/25">·</span>
+                  {new Date(review.createdAt).toLocaleDateString()}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Related */}
       {related.length > 0 && (

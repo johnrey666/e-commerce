@@ -1,14 +1,21 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OrderChatModal } from "@/components/OrderChatModal";
+import { StarRating } from "@/components/StarRating";
 import { ChatIcon } from "@/components/icons";
 import { formatPrice } from "@/lib/format";
 import { useMounted } from "@/lib/hooks";
+import { fetchReviewsForOrders } from "@/lib/reviews";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useOrderStore } from "@/lib/store/order-store";
-import type { Order, OrderStatus, PaymentStatus } from "@/lib/types";
+import type {
+  Order,
+  OrderStatus,
+  PaymentStatus,
+  ProductReview,
+} from "@/lib/types";
 
 const STATUSES: OrderStatus[] = ["Pending", "Out for Delivery", "Delivered"];
 
@@ -35,6 +42,7 @@ export default function AdminOrdersPage() {
   const [chatOrder, setChatOrder] = useState<Order | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncNote, setSyncNote] = useState<string | null>(null);
+  const [reviews, setReviews] = useState<ProductReview[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +72,33 @@ export default function AdminOrdersPage() {
       cancelled = true;
     };
   }, [fetchOrders]);
+
+  const orderIdsKey = useMemo(
+    () => orders.map((o) => o.id).join(","),
+    [orders]
+  );
+
+  useEffect(() => {
+    if (orders.length === 0) {
+      setReviews([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await fetchReviewsForOrders(orders.map((o) => o.id));
+        if (!cancelled) setReviews(rows);
+      } catch {
+        if (!cancelled) setReviews([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [orderIdsKey, orders]);
+
+  const reviewFor = (orderId: string, productId: string) =>
+    reviews.find((r) => r.orderId === orderId && r.productId === productId);
 
   const filtered =
     statusFilter === "All"
@@ -204,22 +239,51 @@ export default function AdminOrdersPage() {
                           <h3 className="mb-3 text-[9px] font-medium uppercase tracking-[0.3em] text-ink/45">
                             Items
                           </h3>
-                          <ul className="space-y-2 text-sm">
-                            {order.items.map((item) => (
-                              <li
-                                key={`${item.productId}-${item.size ?? ""}`}
-                                className="flex justify-between"
-                              >
-                                <span className="text-ink/70">
-                                  {item.name}
-                                  {item.size ? ` (${item.size})` : ""} ×{" "}
-                                  {item.quantity}
-                                </span>
-                                <span className="font-medium text-ink">
-                                  {formatPrice(item.unitPrice * item.quantity)}
-                                </span>
-                              </li>
-                            ))}
+                          <ul className="space-y-4 text-sm">
+                            {order.items.map((item) => {
+                              const review = reviewFor(
+                                order.id,
+                                item.productId
+                              );
+                              return (
+                                <li
+                                  key={`${item.productId}-${item.size ?? ""}`}
+                                >
+                                  <div className="flex justify-between gap-3">
+                                    <span className="text-ink/70">
+                                      {item.name}
+                                      {item.size ? ` (${item.size})` : ""} ×{" "}
+                                      {item.quantity}
+                                    </span>
+                                    <span className="font-medium text-ink">
+                                      {formatPrice(
+                                        item.unitPrice * item.quantity
+                                      )}
+                                    </span>
+                                  </div>
+                                  {review ? (
+                                    <div className="mt-2 border-l-2 border-brand/30 pl-3">
+                                      <StarRating
+                                        value={review.rating}
+                                        size={12}
+                                      />
+                                      {review.body ? (
+                                        <p className="mt-1 text-[12px] leading-relaxed text-ink/55">
+                                          {review.body}
+                                        </p>
+                                      ) : null}
+                                      <p className="mt-1 text-[10px] text-ink/35">
+                                        {review.reviewerName}
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <p className="mt-1 text-[11px] text-ink/30">
+                                      No review yet
+                                    </p>
+                                  )}
+                                </li>
+                              );
+                            })}
                           </ul>
                         </div>
                         <div className="space-y-2 text-sm text-ink/70">
@@ -272,7 +336,11 @@ export default function AdminOrdersPage() {
                             onClick={() => setChatOrder(order)}
                             className="ml-auto inline-flex items-center gap-2 border border-ink/15 px-4 py-2 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/60 hover:border-ink hover:text-ink"
                           >
-                            <ChatIcon width={13} height={13} strokeWidth={1.5} />
+                            <ChatIcon
+                              width={13}
+                              height={13}
+                              strokeWidth={1.5}
+                            />
                             Chat
                           </button>
                         )}

@@ -164,6 +164,15 @@ export const UserIcon = (p: IconProps) => (
   </svg>
 );
 
+/** Image / photo attach. */
+export const ImageIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <circle cx="8.5" cy="8.5" r="1.5" />
+    <path d="m21 15-5-5L5 21" />
+  </svg>
+);
+
 /** Five-point star — reviews. */
 export const StarIcon = (p: IconProps & { filled?: boolean }) => {
   const { filled, ...rest } = p;

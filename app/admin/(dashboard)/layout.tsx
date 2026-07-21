@@ -72,18 +72,25 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--color-cream)_0%,var(--color-paper)_28%)]">
       <header className="sticky top-0 z-40 border-b border-ink/10 bg-paper/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-[4.25rem] max-w-[90rem] items-center justify-between gap-4 px-5 sm:h-[5rem] sm:px-10">
-          <div className="flex items-center gap-4">
-            <Logo />
-            <span className="hidden h-4 w-px bg-ink/12 sm:block" aria-hidden />
-            <div className="hidden sm:block">
+        <div className="relative mx-auto flex h-[4.25rem] max-w-[90rem] items-center justify-between px-5 sm:h-[5rem] sm:px-10">
+          {/* Left — atelier label on desktop */}
+          <div className="hidden flex-1 items-center gap-4 md:flex">
+            <span className="h-4 w-px bg-ink/12" aria-hidden />
+            <div>
               <p className="text-[9px] font-medium uppercase tracking-[0.35em] text-ink/40">
                 Atelier
               </p>
               <p className="mt-0.5 text-[11px] text-ink/55">{email}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex-1 md:hidden" aria-hidden />
+
+          {/* Logo — centered like the store */}
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <Logo size="header" priority />
+          </div>
+
+          <div className="flex flex-1 items-center justify-end gap-3 md:gap-4">
             <Link href="/" className="nav-link group relative hidden md:inline-block">
               View Store
               <span className="absolute -bottom-1.5 left-0 h-px w-0 bg-ink transition-all duration-500 group-hover:w-full" />
@@ -92,7 +99,7 @@ export default function AdminLayout({
               type="button"
               onClick={() => setProfileOpen(true)}
               aria-label="Profile"
-              className="grid size-10 place-items-center border border-ink/12 text-ink/60 transition-colors hover:border-ink hover:text-ink"
+              className="hidden size-10 place-items-center border border-ink/12 text-ink/60 transition-colors hover:border-ink hover:text-ink md:grid"
             >
               <UserIcon width={18} height={18} strokeWidth={1.5} />
             </button>

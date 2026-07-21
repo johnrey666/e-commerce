@@ -2,9 +2,8 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { BRAND_LOGOS } from "@/lib/brand-logos";
 
-/** Partner brands strip — admin-managed images, or bundled defaults when empty. */
+/** Partner brands strip — only admin-uploaded logos (0–N). */
 export function HeroGallery({
   images = [],
   title = "Sourced from the world's finest brands",
@@ -12,12 +11,7 @@ export function HeroGallery({
   images?: string[];
   title?: string;
 }) {
-  const custom = images.filter(Boolean);
-  const items =
-    custom.length > 0
-      ? custom.map((src) => ({ src }))
-      : BRAND_LOGOS.map((logo) => ({ src: logo }));
-
+  const items = images.filter(Boolean);
   if (items.length === 0) return null;
 
   return (
@@ -26,9 +20,9 @@ export function HeroGallery({
         {title}
       </p>
       <div className="flex flex-wrap items-center justify-center gap-x-14 gap-y-8 px-4">
-        {items.map((item, idx) => (
+        {items.map((src, idx) => (
           <motion.div
-            key={typeof item.src === "string" ? `${item.src}-${idx}` : idx}
+            key={`${src}-${idx}`}
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -40,7 +34,7 @@ export function HeroGallery({
             className="relative h-9 w-20 opacity-45 grayscale transition-all duration-500 hover:opacity-90 hover:grayscale-0 sm:h-11 sm:w-24"
           >
             <Image
-              src={item.src}
+              src={src}
               alt={`Partner brand ${idx + 1}`}
               fill
               sizes="120px"

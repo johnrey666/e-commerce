@@ -122,6 +122,7 @@ export interface OrderMessage {
   senderId: string;
   senderRole: UserRole;
   body: string;
+  imageUrl?: string;
   createdAt: string;
 }
 

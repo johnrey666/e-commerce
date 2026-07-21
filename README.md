@@ -31,8 +31,8 @@ Fill in:
 ### Database
 
 1. In Supabase SQL Editor, run `supabase/schema.sql`.
-2. Then run migrations in order under `supabase/migrations/` (`001` … `005`).
-   `005_product_reviews.sql` enables star ratings from paid orders.
+2. Then run migrations in order under `supabase/migrations/` (`001` … `006`).
+   `005` = product reviews · `006` = chat photo attachments.
 
 ### Auth setup
 

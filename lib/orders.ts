@@ -47,7 +47,8 @@ type MessageRow = {
   order_id: string;
   sender_id: string;
   sender_role: "user" | "admin";
-  body: string;
+  body: string | null;
+  image_url: string | null;
   created_at: string;
 };
 
@@ -89,7 +90,8 @@ function mapMessage(row: MessageRow): OrderMessage {
     orderId: row.order_id,
     senderId: row.sender_id,
     senderRole: row.sender_role,
-    body: row.body,
+    body: row.body?.trim() ?? "",
+    imageUrl: row.image_url?.trim() || undefined,
     createdAt: row.created_at,
   };
 }
@@ -313,8 +315,15 @@ export async function sendOrderMessage(input: {
   orderId: string;
   senderId: string;
   senderRole: "user" | "admin";
-  body: string;
+  body?: string;
+  imageUrl?: string;
 }): Promise<{ ok: true; message: OrderMessage } | { ok: false; error: string }> {
+  const body = input.body?.trim() ?? "";
+  const imageUrl = input.imageUrl?.trim() || null;
+  if (!body && !imageUrl) {
+    return { ok: false, error: "Write a message or attach a photo." };
+  }
+
   const supabase = createClient();
   const { data, error } = await supabase
     .from("order_messages")
@@ -322,7 +331,8 @@ export async function sendOrderMessage(input: {
       order_id: input.orderId,
       sender_id: input.senderId,
       sender_role: input.senderRole,
-      body: input.body.trim(),
+      body: body || "",
+      image_url: imageUrl,
     })
     .select("*")
     .single();
@@ -332,4 +342,40 @@ export async function sendOrderMessage(input: {
   }
 
   return { ok: true, message: mapMessage(data as MessageRow) };
+}
+
+export async function uploadChatImage(
+  orderId: string,
+  file: File
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  const allowed = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+  if (!allowed.includes(file.type)) {
+    return { ok: false, error: "Use JPG, PNG, WebP, or AVIF." };
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    return { ok: false, error: "Image must be under 8 MB." };
+  }
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Sign in to send photos." };
+
+  const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${user.id}/${orderId}/${crypto.randomUUID()}.${extension}`;
+  const { error: uploadError } = await supabase.storage
+    .from("chat-media")
+    .upload(path, file, {
+      cacheControl: "31536000",
+      contentType: file.type,
+      upsert: false,
+    });
+
+  if (uploadError) {
+    return { ok: false, error: uploadError.message };
+  }
+
+  const { data } = supabase.storage.from("chat-media").getPublicUrl(path);
+  return { ok: true, url: data.publicUrl };
 }

@@ -258,8 +258,9 @@ export default function AdminLandingPage() {
               Brand logos
             </h2>
             <p className="mt-1 text-[12px] text-ink/45">
-              Add as many logos as you like, or remove them all to hide custom
-              logos (bundled defaults show when empty).
+              Upload any number of partner logos — or none. Each can be replaced
+              or removed. The strip on the storefront only shows what you add
+              here.
             </p>
           </div>
         </div>

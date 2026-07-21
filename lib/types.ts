@@ -12,13 +12,34 @@ export interface Category {
   parentId: string | null;
 }
 
+export interface StoreInfoDetail {
+  label: string;
+  value: string;
+  detail: string;
+  href?: string;
+}
+
+export interface StoreInfoContent {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  tagline: string;
+  exteriorUrl: string;
+  interiorUrls: string[];
+  details: StoreInfoDetail[];
+}
+
 export interface LandingContent {
   heroVideoUrl: string;
-  /** Six optional overrides; empty slots use the bundled placeholder logos. */
+  /** Partner brand logo URLs — variable length; empty uses bundled defaults. */
   brandImages: string[];
+  /** Headline above the brand logos strip. */
+  brandsTitle: string;
   /** Optional storefront image keyed by subcategory ID. */
   categoryImages: Record<string, string>;
+  storeInfo: StoreInfoContent;
 }
+
 
 export type ProductCondition =
   | "Brand New"
@@ -62,26 +83,45 @@ export interface CartItem {
 }
 
 export type OrderStatus = "Pending" | "Out for Delivery" | "Delivered";
+export type PaymentStatus = "Pending" | "Paid";
+export type ShippingCarrier = "JNT" | "DHL" | "LBC";
+export type UserRole = "admin" | "user";
 
 export interface CheckoutDetails {
   firstName: string;
   lastName: string;
-  address: string;
-  /** Placeholder pinned map location, e.g. "14.5995, 120.9842". */
-  pinnedLocation?: string;
   contactNumber: string;
   email: string;
+  country: string;
+  region: string;
+  postalCode: string;
+  barangay: string;
+  city: string;
+  /** Lat/lng string from the map pin, e.g. "14.5995, 120.9842". */
+  pinnedLocation?: string;
   notes?: string;
-  /** GCash reference number (placeholder — no real payment yet). */
-  gcashReference?: string;
+  paymentMethod: "paymongo";
+  shippingCarrier: ShippingCarrier;
 }
 
 export interface Order {
   id: string;
+  userId: string;
   items: CartItem[];
   total: number;
   customer: CheckoutDetails;
   status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymongoCheckoutId?: string;
+  createdAt: string;
+}
+
+export interface OrderMessage {
+  id: string;
+  orderId: string;
+  senderId: string;
+  senderRole: UserRole;
+  body: string;
   createdAt: string;
 }
 

@@ -148,3 +148,28 @@ body {
     background: linear-gradient(90deg, #ff0040, #00b0ff);
   }
 }
+
+/* Dark mode — muted charcoal luxury, not pure black */
+html.dark {
+  --color-brand: #e23a45;
+  --color-brand-dark: #c1121f;
+  --color-brand-soft: #2a1c1c;
+  --color-brand-faint: #1f1717;
+  --color-brand-light: #2a1c1c;
+  --color-accent: #e23a45;
+  --color-ink: #f4ecea;
+  --color-muted: #f4ecea73;
+  --color-line: #f4ecea18;
+  --color-surface: #1a1514;
+  --color-cream: #221c1b;
+  --color-paper: #12100f;
+}
+
+html.dark body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+html.dark .btn-primary {
+  color: #fff;
+}

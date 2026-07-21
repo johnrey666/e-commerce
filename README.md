@@ -1,8 +1,8 @@
 # Good Catch — Thrifted Apparel Store
 
-A modern, animated e-commerce web app for **Good Catch**, a thrift apparel store with an in-store pickup model: customers browse and order online, pay via GCash (placeholder for now), and pick up in store. No shipping.
+Modern e-commerce for **Good Catch**: browse, check out with delivery details, pay via **PayMongo**, and track orders with seller chat.
 
-Built with **Next.js (App Router) · TypeScript · Tailwind CSS v4 · Framer Motion · Zustand**.
+Built with **Next.js (App Router) · TypeScript · Tailwind CSS v4 · Framer Motion · Zustand · Supabase · Leaflet · PayMongo**.
 
 ## Getting started
 
@@ -13,51 +13,59 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### Admin access (Supabase Auth)
-
-1. Create a project at [supabase.com](https://supabase.com).
-2. Copy **Project URL** and **anon / publishable key** from **Project Settings → API** into `.env.local`:
+### Environment
 
 ```bash
 cp .env.example .env.local
-# then paste your keys
 ```
 
-3. In the Supabase dashboard, open **SQL → New query**, paste and run `supabase/schema.sql`.
-4. For local testing, go to **Authentication → Providers → Email** and turn **off** “Confirm email” so signup logs you in immediately.
-5. Restart `npm run dev`, open `/admin/login`, and use **Sign up** to create your first admin, then **Sign in**.
+Fill in:
 
-Products, brands, categories, admin auth, and product images use Supabase.
-Cart and orders still use local Zustand stores for now.
+| Variable | Where |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Same page (for PayMongo webhooks) |
+| `NEXT_PUBLIC_PAYMONGO_PUBLIC_KEY` | PayMongo → Developers → API Keys |
+| `PAYMONGO_SECRET_KEY` | PayMongo secret key (`sk_test_…`) — **required** to create checkout sessions |
+
+### Database
+
+1. In Supabase SQL Editor, run `supabase/schema.sql`.
+2. Then run `supabase/migrations/001_customer_orders_chat.sql` (customer roles, orders, chat).
+
+### Auth setup
+
+1. **Email**: Authentication → Providers → Email. For local testing, turn off “Confirm email”.
+2. **Google / Gmail**: Authentication → Providers → Google. Add your Google OAuth client. Add redirect URL:
+   `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
+   and site URL / additional redirect: `http://localhost:3000/auth/callback`
+3. Create the first **admin** at `/admin/login` (Sign Up). Customer accounts use `/signup` or “Continue with Gmail” — they cannot access admin.
+
+### PayMongo webhook (recommended)
+
+Dashboard → Developers → Webhooks → add  
+`https://your-domain/api/webhooks/paymongo`  
+Subscribe to `checkout_session.payment.paid`.
+
+On success redirect, the app also verifies payment via `/api/checkout/verify`.
 
 ## Pages
 
 | Route | Description |
 | --- | --- |
-| `/` | Homepage — hero with animated visual, New Arrivals, On Sale, categories, brands |
-| `/shop` | Full listing with search, category/brand/price filters, and sorting |
-| `/product/[id]` | Product detail with gallery, sizes, and add to cart |
-| `/cart` | Cart page (a slide-in cart drawer is also available everywhere) |
-| `/checkout` | Guest checkout — details, pin-location placeholder, GCash placeholder |
-| `/order-confirmation` | Post-checkout confirmation |
-| `/admin/login` | Admin login / sign up (Supabase Auth) |
-| `/admin` | Protected dashboard with stats |
-| `/admin/products` (+ `new`, `[id]/edit`) | Product CRUD incl. discounts, flags, placeholder images |
-| `/admin/brands`, `/admin/categories` | Manage brands/categories (feed the shop filters) |
-| `/admin/orders` | Orders list with Pending / Ready for Pickup / Completed statuses |
+| `/` | Homepage |
+| `/shop`, `/product/[id]` | Catalog |
+| `/cart`, `/checkout` | Bag + delivery checkout (login required to place order) |
+| `/login`, `/signup` | Customer accounts (email or Google) |
+| `/account/orders` | Order history + chat with seller |
+| `/order-confirmation` | After PayMongo payment |
+| `/admin/login` | Admin only |
+| `/admin/orders` | Pending / Paid payment + Out for Delivery |
 
-## Architecture notes (for future backend integration)
+## Checkout flow
 
-- **`lib/api.ts`** — the data-access layer. All seed data flows through these async functions; swap their bodies for Firestore/REST calls and the UI keeps working.
-- **`lib/store/catalog-store.ts`** — shared Supabase catalog state with realtime updates.
-- **`lib/store/cart-store.ts` / `order-store.ts`** — browser-local cart and orders.
-- **`lib/seed-data.ts`** — placeholder products/brands/categories and the extensible `curatedSections` array (add "Best Sellers", "Staff Picks", etc. here).
-- **Placeholder swap points:**
-  - `components/Logo.tsx` — replace the text wordmark with a real logo image.
-  - `components/ProductImage.tsx` — supports real image URLs already; `placeholder:<hue>` refs render styled boxes.
-  - `components/home/HeroVisual.tsx` — slot for a Spline embed or React Three Fiber canvas.
-  - `components/MapPickerPlaceholder.tsx` — slot for Leaflet / Google Maps.
-  - `lib/store/auth-store.ts` — Supabase Auth (admin login / signup / session).
-  - `lib/supabase/` — browser + server clients; `proxy.ts` refreshes sessions.
-  - `supabase/schema.sql` — `profiles` table + signup trigger for admins.
-  - GCash section in `app/(store)/checkout/page.tsx` — slot for the real payment API.
+1. Customer fills delivery details (name, contact, email, country default **Philippines**, region, postal, barangay, city, map pin, notes).
+2. Selects PayMongo + shipping carrier (JNT / DHL / LBC).
+3. Must be logged in as a **customer** (not admin).
+4. Place Order → PayMongo hosted checkout → on success, order is **Paid** + fulfillment **Pending**.
+5. Admin marks **Out for Delivery** when shipped.

@@ -4,27 +4,34 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 import { useCatalog, useMounted } from "@/lib/hooks";
+import { useEffect } from "react";
 import { useOrderStore } from "@/lib/store/order-store";
 
 export default function AdminDashboardPage() {
   const mounted = useMounted();
   const { products, brands, ready } = useCatalog();
   const orders = useOrderStore((s) => s.orders);
+  const fetchOrders = useOrderStore((s) => s.fetchOrders);
+
+  useEffect(() => {
+    void fetchOrders("all");
+  }, [fetchOrders]);
 
   const pendingOrders = orders.filter((o) => o.status === "Pending");
+  const paidOrders = orders.filter((o) => o.paymentStatus === "Paid");
   const lowStock = products.filter((p) => p.stock <= 1);
   const onSale = products.filter((p) => p.onSale);
   const revenue = orders
-    .filter((o) => o.status === "Delivered")
+    .filter((o) => o.paymentStatus === "Paid")
     .reduce((sum, o) => sum + o.total, 0);
 
   const stats = [
     { label: "Total Products", value: ready ? products.length : "—", href: "/admin/products" },
     { label: "Total Orders", value: mounted ? orders.length : "—", href: "/admin/orders" },
-    { label: "Pending Orders", value: mounted ? pendingOrders.length : "—", href: "/admin/orders" },
+    { label: "Pending Ship", value: mounted ? pendingOrders.length : "—", href: "/admin/orders" },
+    { label: "Paid", value: mounted ? paidOrders.length : "—", href: "/admin/orders" },
     { label: "Low Stock", value: ready ? lowStock.length : "—", href: "/admin/products" },
     { label: "On Sale", value: ready ? onSale.length : "—", href: "/admin/products" },
-    { label: "Brands", value: ready ? brands.length : "—", href: "/admin/brands" },
   ];
 
   return (
@@ -93,7 +100,7 @@ export default function AdminDashboardPage() {
                   <div className="text-right">
                     <p className="font-medium text-ink">{formatPrice(order.total)}</p>
                     <p className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.25em] text-ink/45">
-                      {order.status}
+                      {order.paymentStatus} · {order.status}
                     </p>
                   </div>
                 </li>
@@ -101,7 +108,7 @@ export default function AdminDashboardPage() {
             </ul>
           )}
           <p className="mt-6 border-t border-ink/8 pt-4 text-[10px] font-medium uppercase tracking-[0.25em] text-ink/45">
-            Completed revenue · {formatPrice(mounted ? revenue : 0)}
+            Paid revenue · {formatPrice(mounted ? revenue : 0)}
           </p>
         </motion.section>
 

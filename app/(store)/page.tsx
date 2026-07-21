@@ -122,7 +122,10 @@ export default function HomePage() {
 
       {/* ——— Partner brands strip ——— */}
       <section className="mx-auto mt-20 max-w-[90rem] px-5 sm:mt-28 sm:px-10">
-        <HeroGallery images={content.brandImages} />
+        <HeroGallery
+          images={content.brandImages}
+          title={content.brandsTitle}
+        />
       </section>
 
       {/* ——— New arrivals, then on sale ——— */}

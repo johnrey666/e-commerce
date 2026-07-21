@@ -1,38 +1,48 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { CartItem, CheckoutDetails, Order, OrderStatus } from "../types";
+import {
+  fetchAllOrders,
+  fetchMyOrders,
+  updateOrderStatus as updateOrderStatusApi,
+} from "@/lib/orders";
+import type { Order, OrderStatus } from "@/lib/types";
 
 interface OrderState {
   orders: Order[];
-  placeOrder: (items: CartItem[], total: number, customer: CheckoutDetails) => Order;
-  updateStatus: (orderId: string, status: OrderStatus) => void;
+  loading: boolean;
+  fetchOrders: (mode?: "mine" | "all") => Promise<void>;
+  updateStatus: (orderId: string, status: OrderStatus) => Promise<void>;
+  setOrders: (orders: Order[]) => void;
 }
 
-export const useOrderStore = create<OrderState>()(
-  persist(
-    (set) => ({
-      orders: [],
+export const useOrderStore = create<OrderState>((set, get) => ({
+  orders: [],
+  loading: false,
 
-      placeOrder: (items, total, customer) => {
-        const order: Order = {
-          id: `GC-${Date.now().toString(36).toUpperCase()}`,
-          items,
-          total,
-          customer,
-          status: "Pending",
-          createdAt: new Date().toISOString(),
-        };
-        set((s) => ({ orders: [order, ...s.orders] }));
-        return order;
-      },
+  setOrders: (orders) => set({ orders }),
 
-      updateStatus: (orderId, status) =>
-        set((s) => ({
-          orders: s.orders.map((o) => (o.id === orderId ? { ...o, status } : o)),
-        })),
-    }),
-    { name: "good-catch-orders" }
-  )
-);
+  fetchOrders: async (mode = "all") => {
+    set({ loading: true });
+    try {
+      const orders =
+        mode === "mine" ? await fetchMyOrders() : await fetchAllOrders();
+      set({ orders });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  updateStatus: async (orderId, status) => {
+    const result = await updateOrderStatusApi(orderId, status);
+    if (!result.ok) {
+      console.warn("[orders] updateStatus:", result.error);
+      return;
+    }
+    set({
+      orders: get().orders.map((o) =>
+        o.id === orderId ? { ...o, status } : o
+      ),
+    });
+  },
+}));

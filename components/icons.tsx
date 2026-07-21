@@ -156,3 +156,10 @@ export const ChatIcon = (p: IconProps) => (
     <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z" />
   </svg>
 );
+
+export const UserIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 20c1.8-3.5 5-5 8-5s6.2 1.5 8 5" />
+  </svg>
+);

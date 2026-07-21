@@ -1,11 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { OrderChatModal } from "@/components/OrderChatModal";
+import { ChatIcon } from "@/components/icons";
 import { formatPrice } from "@/lib/format";
 import { useMounted } from "@/lib/hooks";
+import { useAuthStore } from "@/lib/store/auth-store";
 import { useOrderStore } from "@/lib/store/order-store";
-import type { OrderStatus } from "@/lib/types";
+import type { Order, OrderStatus, PaymentStatus } from "@/lib/types";
 
 const STATUSES: OrderStatus[] = ["Pending", "Out for Delivery", "Delivered"];
 
@@ -15,12 +18,52 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
   Delivered: "bg-brand text-white",
 };
 
+const PAYMENT_STYLES: Record<PaymentStatus, string> = {
+  Pending: "border border-ink/20 text-ink/60",
+  Paid: "bg-ink text-white",
+};
+
 export default function AdminOrdersPage() {
   const mounted = useMounted();
+  const userId = useAuthStore((s) => s.userId);
   const orders = useOrderStore((s) => s.orders);
+  const loading = useOrderStore((s) => s.loading);
+  const fetchOrders = useOrderStore((s) => s.fetchOrders);
   const updateStatus = useOrderStore((s) => s.updateStatus);
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "All">("All");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [chatOrder, setChatOrder] = useState<Order | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncNote, setSyncNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const boot = async () => {
+      setSyncing(true);
+      try {
+        const res = await fetch("/api/checkout/reconcile", { method: "POST" });
+        const data = (await res.json()) as {
+          markedPaid?: number;
+          checked?: number;
+        };
+        if (!cancelled && data.markedPaid && data.markedPaid > 0) {
+          setSyncNote(
+            `Synced ${data.markedPaid} newly paid order${data.markedPaid === 1 ? "" : "s"} from PayMongo.`
+          );
+        }
+      } catch {
+        // ignore — list still loads
+      }
+      if (!cancelled) {
+        await fetchOrders("all");
+        setSyncing(false);
+      }
+    };
+    void boot();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchOrders]);
 
   const filtered =
     statusFilter === "All"
@@ -29,13 +72,48 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
-      <p className="eyebrow">The Ledger</p>
-      <h1 className="mt-3 font-display text-[2rem] font-medium leading-[1.1] tracking-[-0.01em] text-ink sm:text-[2.6rem]">
-        Orders
-        <span className="ml-3 align-middle text-base font-normal text-ink/40">
-          {mounted ? orders.length : "…"}
-        </span>
-      </h1>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">The Ledger</p>
+          <h1 className="mt-3 font-display text-[2rem] font-medium leading-[1.1] tracking-[-0.01em] text-ink sm:text-[2.6rem]">
+            Orders
+            <span className="ml-3 align-middle text-base font-normal text-ink/40">
+              {mounted ? orders.length : "…"}
+            </span>
+          </h1>
+        </div>
+        <button
+          type="button"
+          disabled={syncing}
+          onClick={async () => {
+            setSyncing(true);
+            setSyncNote(null);
+            try {
+              const res = await fetch("/api/checkout/reconcile", {
+                method: "POST",
+              });
+              const data = (await res.json()) as {
+                markedPaid?: number;
+                checked?: number;
+                inventoryApplied?: number;
+                error?: string;
+              };
+              setSyncNote(
+                data.error
+                  ? data.error
+                  : `Checked ${data.checked ?? 0} pending · marked ${data.markedPaid ?? 0} paid · stock updated on ${data.inventoryApplied ?? 0}.`
+              );
+
+              await fetchOrders("all");
+            } finally {
+              setSyncing(false);
+            }
+          }}
+          className="border border-ink/15 px-5 py-2.5 text-[10px] font-medium uppercase tracking-[0.24em] text-ink/60 transition-colors hover:border-ink hover:text-ink disabled:opacity-50"
+        >
+          {syncing ? "Syncing…" : "Sync Payments"}
+        </button>
+      </div>
 
       <div className="mt-8 flex flex-wrap gap-2">
         {(["All", ...STATUSES] as const).map((s) => (
@@ -53,18 +131,27 @@ export default function AdminOrdersPage() {
         ))}
       </div>
 
-      {mounted && filtered.length === 0 ? (
+      <p className="mt-4 text-[12px] text-ink/40">
+        Paid orders only. Use Sync Payments if a successful PayMongo payment is
+        missing.
+      </p>
+      {syncNote && (
+        <p className="mt-2 text-[12px] text-ink/55">{syncNote}</p>
+      )}
+
+      {mounted && !loading && filtered.length === 0 ? (
         <div className="mt-10 border border-ink/10 bg-surface px-6 py-20 text-center">
           <p className="eyebrow">Quiet For Now</p>
           <p className="mt-4 font-display text-2xl font-medium text-ink">
-            No orders here
+            No paid orders yet
           </p>
           <p className="mx-auto mt-3 max-w-sm text-[13px] leading-relaxed text-ink/45">
-            Orders placed through checkout will show up in this list.
+            After a successful payment, tap Sync Payments if it doesn’t show
+            automatically.
           </p>
         </div>
       ) : (
-        <ul className="mt-8 space-y-5">
+        <ul className="mt-8 space-y-4">
           {(mounted ? filtered : []).map((order) => {
             const expanded = expandedId === order.id;
             return (
@@ -86,7 +173,12 @@ export default function AdminOrdersPage() {
                       {new Date(order.createdAt).toLocaleString()}
                     </p>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.25em] ${PAYMENT_STYLES[order.paymentStatus]}`}
+                    >
+                      {order.paymentStatus}
+                    </span>
                     <span
                       className={`px-3 py-1.5 text-[9px] font-medium uppercase tracking-[0.25em] ${STATUS_STYLES[order.status]}`}
                     >
@@ -136,7 +228,14 @@ export default function AdminOrdersPage() {
                           </h3>
                           <p>{order.customer.contactNumber}</p>
                           <p>{order.customer.email}</p>
-                          <p>{order.customer.address}</p>
+                          <p>
+                            {order.customer.barangay}, {order.customer.city}
+                          </p>
+                          <p>
+                            {order.customer.region} {order.customer.postalCode}
+                          </p>
+                          <p>{order.customer.country}</p>
+                          <p>Ship via {order.customer.shippingCarrier}</p>
                           {order.customer.pinnedLocation && (
                             <p className="text-ink/45">
                               Pinned: {order.customer.pinnedLocation}
@@ -145,14 +244,6 @@ export default function AdminOrdersPage() {
                           {order.customer.notes && (
                             <p className="text-ink/45">
                               Notes: {order.customer.notes}
-                            </p>
-                          )}
-                          {order.customer.gcashReference && (
-                            <p>
-                              GCash ref:{" "}
-                              <strong className="text-ink">
-                                {order.customer.gcashReference}
-                              </strong>
                             </p>
                           )}
                         </div>
@@ -175,6 +266,16 @@ export default function AdminOrdersPage() {
                             {s}
                           </button>
                         ))}
+                        {userId && (
+                          <button
+                            type="button"
+                            onClick={() => setChatOrder(order)}
+                            className="ml-auto inline-flex items-center gap-2 border border-ink/15 px-4 py-2 text-[9px] font-medium uppercase tracking-[0.22em] text-ink/60 hover:border-ink hover:text-ink"
+                          >
+                            <ChatIcon width={13} height={13} strokeWidth={1.5} />
+                            Chat
+                          </button>
+                        )}
                       </div>
                     </motion.div>
                   )}
@@ -183,6 +284,17 @@ export default function AdminOrdersPage() {
             );
           })}
         </ul>
+      )}
+
+      {chatOrder && userId && (
+        <OrderChatModal
+          open={Boolean(chatOrder)}
+          onClose={() => setChatOrder(null)}
+          orderId={chatOrder.id}
+          orderLabel={`${chatOrder.id} · ${chatOrder.customer.firstName}`}
+          senderId={userId}
+          senderRole="admin"
+        />
       )}
     </div>
   );

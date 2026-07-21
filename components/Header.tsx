@@ -3,11 +3,14 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMounted } from "@/lib/hooks";
+import { useAuthStore } from "@/lib/store/auth-store";
 import { selectCartCount, useCartStore } from "@/lib/store/cart-store";
-import { CartIcon, CloseIcon, MenuIcon, SearchIcon } from "./icons";
+import { useProfileStore } from "@/lib/store/profile-store";
+import { CartIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from "./icons";
 import { Logo } from "./Logo";
+import { ProfileDrawer } from "./ProfileDrawer";
 
 const NAV = [
   { href: "/shop", label: "Collection" },
@@ -24,11 +27,37 @@ export function Header() {
   const mounted = useMounted();
   const count = useCartStore(selectCartCount);
   const openDrawer = useCartStore((s) => s.openDrawer);
+  const initialize = useAuthStore((s) => s.initialize);
+  const isCustomer = useAuthStore((s) => s.isCustomer);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
+  const userId = useAuthStore((s) => s.userId);
+  const loadProfile = useProfileStore((s) => s.loadProfile);
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [profileOpen, setProfileOpen] = useState(false);
   const hideMobileBar =
     pathname.startsWith("/product/") || pathname === "/checkout";
+
+  useEffect(() => {
+    void initialize();
+  }, [initialize]);
+
+  useEffect(() => {
+    if (userId) void loadProfile(userId);
+  }, [userId, loadProfile]);
+
+  const loggedIn = Boolean(isCustomer || isAdmin);
+  const accountHref = isCustomer
+    ? "/account/orders"
+    : isAdmin
+      ? "/admin"
+      : "/login";
+  const accountLabel = isCustomer
+    ? "My Orders"
+    : isAdmin
+      ? "Admin"
+      : "Sign In";
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,12 +85,25 @@ export function Header() {
             <Logo size="header" priority />
           </div>
 
-          {/* Cart — always at the far right; Admin link is desktop-only */}
-          <div className="flex flex-1 items-center justify-end gap-5">
-            <Link href="/admin" className="nav-link group relative hidden md:inline-block">
-              Admin
+          {/* Cart + profile at far right */}
+          <div className="flex flex-1 items-center justify-end gap-3 sm:gap-5">
+            <Link
+              href={accountHref}
+              className="nav-link group relative hidden md:inline-block"
+            >
+              {accountLabel}
               <span className="absolute -bottom-1.5 left-0 h-px w-0 bg-ink transition-all duration-500 group-hover:w-full" />
             </Link>
+            {loggedIn && (
+              <button
+                type="button"
+                onClick={() => setProfileOpen(true)}
+                aria-label="Profile settings"
+                className="relative flex size-10 items-center justify-center text-ink/70 transition-colors duration-300 hover:text-ink"
+              >
+                <UserIcon width={19} height={19} strokeWidth={1.5} />
+              </button>
+            )}
             <button
               onClick={openDrawer}
               aria-label={`Cart${mounted && count > 0 ? `, ${count} items` : ""}`}
@@ -85,6 +127,8 @@ export function Header() {
           </div>
         </div>
       </header>
+
+      <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />
 
       {/* Mobile menu sheet — slides up above the bottom bar */}
       <AnimatePresence>
@@ -136,12 +180,12 @@ export function Header() {
                 transition={{ delay: 0.05 + NAV.length * 0.06 }}
               >
                 <Link
-                  href="/admin"
+                  href={accountHref}
                   onClick={() => setOpen(false)}
                   className="flex items-baseline justify-between py-5"
                 >
                   <span className="font-display text-2xl font-medium text-ink/60">
-                    Admin
+                    {accountLabel}
                   </span>
                   <span className="text-[9px] font-medium uppercase tracking-[0.3em] text-ink/35">
                     0{NAV.length + 1}

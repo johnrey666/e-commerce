@@ -1,10 +1,11 @@
--- Good Catch — admin profiles
+-- Good Catch — profiles (admin + customer)
 -- Run this once in the Supabase SQL Editor (Dashboard → SQL → New query).
+-- Then also run supabase/migrations/001_customer_orders_chat.sql for orders & chat.
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text not null,
-  role text not null default 'admin' check (role in ('admin')),
+  role text not null default 'user' check (role in ('admin', 'user')),
   created_at timestamptz not null default now()
 );
 
@@ -24,16 +25,34 @@ create policy "Users can insert own profile"
   to authenticated
   with check (auth.uid() = id);
 
--- Auto-create an admin profile when a user signs up.
+drop policy if exists "Users can update own profile" on public.profiles;
+create policy "Users can update own profile"
+  on public.profiles
+  for update
+  to authenticated
+  using (auth.uid() = id)
+  with check (
+    auth.uid() = id
+    and role = (select p.role from public.profiles p where p.id = auth.uid())
+  );
+
+-- Auto-create a profile on signup. Role comes from user metadata
+-- (admin signup passes role=admin; customers default to user).
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  requested_role text := coalesce(new.raw_user_meta_data->>'role', 'user');
 begin
   insert into public.profiles (id, email, role)
-  values (new.id, new.email, 'admin')
+  values (
+    new.id,
+    new.email,
+    case when requested_role = 'admin' then 'admin' else 'user' end
+  )
   on conflict (id) do nothing;
   return new;
 end;
@@ -46,12 +65,19 @@ create trigger on_auth_user_created
   for each row
   execute function public.handle_new_user();
 
--- Backfill admins created before this trigger was installed.
+-- Backfill any auth users missing a profile as customers.
+-- Existing admins created under the old schema keep role=admin via migration.
 insert into public.profiles (id, email, role)
-select id, email, 'admin'
+select id, email, 'user'
 from auth.users
 where email is not null
 on conflict (id) do nothing;
+
+alter table public.profiles
+  add column if not exists shipping jsonb not null default '{}'::jsonb;
+
+alter table public.profiles
+  add column if not exists preferences jsonb not null default '{}'::jsonb;
 
 -- Shared authorization helper used by catalog and storage policies.
 create or replace function public.is_admin()
@@ -204,9 +230,17 @@ create table if not exists public.site_content (
   id text primary key check (id = 'landing'),
   hero_video_url text not null default '/sample.mp4',
   brand_images text[] not null default '{}',
+  brands_title text not null default 'Sourced from the world''s finest brands',
   category_images jsonb not null default '{}'::jsonb,
+  store_info jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
+
+alter table public.site_content
+  add column if not exists brands_title text not null
+    default 'Sourced from the world''s finest brands';
+alter table public.site_content
+  add column if not exists store_info jsonb not null default '{}'::jsonb;
 
 insert into public.site_content (id)
 values ('landing')

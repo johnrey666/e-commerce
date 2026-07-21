@@ -51,19 +51,25 @@ export function useLandingContent() {
 
   useEffect(() => {
     const supabase = createClient();
+    let cancelled = false;
+
     const load = async () => {
       try {
-        setContent(await fetchLandingContent());
+        const next = await fetchLandingContent();
+        if (!cancelled) setContent(next);
       } catch {
-        setContent(DEFAULT_LANDING_CONTENT);
+        if (!cancelled) setContent(DEFAULT_LANDING_CONTENT);
       } finally {
-        setReady(true);
+        if (!cancelled) setReady(true);
       }
     };
 
     void load();
+
+    // Unique channel per mount — HomePage + StoreInfo both call this hook;
+    // a shared name throws after the first subscribe().
     const channel = supabase
-      .channel("landing-content")
+      .channel(`landing-content-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {
@@ -72,11 +78,14 @@ export function useLandingContent() {
           table: "site_content",
           filter: "id=eq.landing",
         },
-        () => void load()
+        () => {
+          if (!cancelled) void load();
+        }
       )
       .subscribe();
 
     return () => {
+      cancelled = true;
       void supabase.removeChannel(channel);
     };
   }, []);

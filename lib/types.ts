@@ -58,6 +58,8 @@ export interface Product {
   /** Featured in the Discounts/Sale section. */
   onSale: boolean;
   isNewArrival: boolean;
+  /** ISO timestamp — new-arrival badge expires after this (10 days from set). */
+  newArrivalUntil?: string;
   /** A product may appear in categories under more than one department. */
   categoryIds: string[];
   brandId: string;
@@ -97,7 +99,9 @@ export interface CheckoutDetails {
   postalCode: string;
   barangay: string;
   city: string;
-  /** Lat/lng string from the map pin, e.g. "14.5995, 120.9842". */
+  /** Street / building / unit — required for delivery. */
+  street: string;
+  /** Lat/lng string from the map pin, e.g. "14.5995, 120.9842". Optional. */
   pinnedLocation?: string;
   notes?: string;
   paymentMethod: "paymongo";

@@ -16,6 +16,7 @@ export type SavedShipping = Partial<
     | "postalCode"
     | "barangay"
     | "city"
+    | "street"
     | "pinnedLocation"
     | "notes"
     | "shippingCarrier"

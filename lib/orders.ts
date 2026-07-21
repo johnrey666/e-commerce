@@ -26,6 +26,7 @@ type OrderRow = {
   postal_code: string;
   barangay: string;
   city: string;
+  street?: string | null;
   pinned_location: string | null;
   notes: string | null;
   paymongo_checkout_id: string | null;
@@ -63,6 +64,7 @@ function rowToCustomer(row: OrderRow): CheckoutDetails {
     postalCode: row.postal_code,
     barangay: row.barangay,
     city: row.city,
+    street: row.street?.trim() || "",
     pinnedLocation: row.pinned_location ?? undefined,
     notes: row.notes ?? undefined,
     paymentMethod: "paymongo",
@@ -127,6 +129,7 @@ export async function createOrderDraft(input: {
     postal_code: customer.postalCode,
     barangay: customer.barangay,
     city: customer.city,
+    street: customer.street?.trim() || "",
     pinned_location: customer.pinnedLocation ?? null,
     notes: customer.notes ?? null,
   });

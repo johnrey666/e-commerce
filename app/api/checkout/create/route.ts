@@ -70,6 +70,7 @@ export async function POST(request: Request) {
       postal_code: customer.postalCode,
       barangay: customer.barangay,
       city: customer.city,
+      street: customer.street?.trim() || "",
       pinned_location: customer.pinnedLocation ?? null,
       notes: customer.notes ?? null,
     });

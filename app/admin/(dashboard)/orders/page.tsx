@@ -323,8 +323,11 @@ export default function AdminOrdersPage() {
                           <p className="text-[8px] font-medium uppercase tracking-[0.28em] text-ink/35">
                             Customer
                           </p>
-                          <p className="mt-1.5">{order.customer.email}</p>
+                          <p>{order.customer.email}</p>
                           <p>{order.customer.contactNumber}</p>
+                          {order.customer.street ? (
+                            <p>{order.customer.street}</p>
+                          ) : null}
                           <p>
                             {order.customer.barangay}, {order.customer.city}
                           </p>
@@ -382,6 +385,8 @@ export default function AdminOrdersPage() {
           onClose={() => setChatOrder(null)}
           orderId={chatOrder.id}
           orderLabel={`${chatOrder.id} · ${chatOrder.customer.firstName}`}
+          orderItems={chatOrder.items}
+          orderTotal={chatOrder.total}
           senderId={userId}
           senderRole="admin"
         />

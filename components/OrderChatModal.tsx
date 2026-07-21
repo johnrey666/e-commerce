@@ -4,19 +4,23 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { CloseIcon, ImageIcon } from "@/components/icons";
+import { ProductImage } from "@/components/ProductImage";
+import { formatPrice } from "@/lib/format";
 import {
   fetchOrderMessages,
   sendOrderMessage,
   uploadChatImage,
 } from "@/lib/orders";
 import { createClient } from "@/lib/supabase/client";
-import type { OrderMessage, UserRole } from "@/lib/types";
+import type { CartItem, OrderMessage, UserRole } from "@/lib/types";
 
 export function OrderChatModal({
   open,
   onClose,
   orderId,
   orderLabel,
+  orderItems = [],
+  orderTotal,
   senderId,
   senderRole,
 }: {
@@ -24,6 +28,8 @@ export function OrderChatModal({
   onClose: () => void;
   orderId: string;
   orderLabel?: string;
+  orderItems?: CartItem[];
+  orderTotal?: number;
   senderId: string;
   senderRole: UserRole;
 }) {
@@ -31,10 +37,13 @@ export function OrderChatModal({
   const [body, setBody] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const cover = orderItems[0];
 
   useEffect(() => {
     if (!open) return;
@@ -100,11 +109,14 @@ export function OrderChatModal({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (lightbox) setLightbox(null);
+        else onClose();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, lightbox]);
 
   useEffect(() => {
     if (!pendingFile) {
@@ -168,23 +180,56 @@ export function OrderChatModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          <header className="flex items-center justify-between border-b border-ink/10 px-5 py-4 sm:px-8">
-            <div>
-              <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-ink/40">
-                {senderRole === "admin" ? "Customer chat" : "Seller chat"}
-              </p>
-              <h2 className="mt-1 font-display text-xl font-medium text-ink">
-                {orderLabel ?? orderId}
-              </h2>
+          <header className="border-b border-ink/10 px-5 py-4 sm:px-8">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-ink/40">
+                  {senderRole === "admin" ? "Customer chat" : "Seller chat"}
+                </p>
+                <h2 className="mt-1 truncate font-display text-xl font-medium text-ink">
+                  {orderLabel ?? orderId}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close chat"
+                className="grid size-10 shrink-0 place-items-center border border-ink/15 text-ink/60 transition-colors hover:border-ink hover:text-ink"
+              >
+                <CloseIcon width={18} height={18} strokeWidth={1.5} />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close chat"
-              className="grid size-10 place-items-center border border-ink/15 text-ink/60 transition-colors hover:border-ink hover:text-ink"
-            >
-              <CloseIcon width={18} height={18} strokeWidth={1.5} />
-            </button>
+
+            {cover && (
+              <div className="mt-4 flex items-center gap-3 border border-ink/10 bg-surface p-2.5">
+                <div className="relative h-14 w-11 shrink-0 overflow-hidden bg-brand-soft">
+                  {cover.image ? (
+                    <ProductImage image={cover.image} alt={cover.name} />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-medium text-ink">
+                    {cover.name}
+                    {orderItems.length > 1
+                      ? ` +${orderItems.length - 1} more`
+                      : ""}
+                  </p>
+                  <p className="mt-0.5 truncate text-[11px] text-ink/45">
+                    {orderItems
+                      .map(
+                        (i) =>
+                          `${i.name}${i.size ? ` (${i.size})` : ""} ×${i.quantity}`
+                      )
+                      .join(" · ")}
+                  </p>
+                  {orderTotal != null && (
+                    <p className="mt-0.5 text-[11px] font-medium text-ink/60">
+                      {formatPrice(orderTotal)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </header>
 
           <div className="flex-1 space-y-3 overflow-y-auto px-5 py-6 sm:px-8">
@@ -211,10 +256,9 @@ export function OrderChatModal({
                         {m.senderRole === "admin" ? "Seller" : "Customer"}
                       </p>
                       {m.imageUrl && (
-                        <a
-                          href={m.imageUrl}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => setLightbox(m.imageUrl!)}
                           className="relative mb-2 block aspect-[4/3] w-full min-w-[12rem] overflow-hidden bg-black/10"
                         >
                           <Image
@@ -224,7 +268,7 @@ export function OrderChatModal({
                             sizes="320px"
                             className="object-cover"
                           />
-                        </a>
+                        </button>
                       )}
                       {m.body ? <p>{m.body}</p> : null}
                       <p className="mt-2 text-[10px] opacity-40">
@@ -300,6 +344,39 @@ export function OrderChatModal({
               </p>
             )}
           </form>
+
+          <AnimatePresence>
+            {lightbox && (
+              <motion.div
+                className="fixed inset-0 z-[90] flex items-center justify-center bg-black/85 p-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setLightbox(null)}
+              >
+                <button
+                  type="button"
+                  aria-label="Close image"
+                  className="absolute right-4 top-4 grid size-10 place-items-center border border-white/30 text-white"
+                  onClick={() => setLightbox(null)}
+                >
+                  <CloseIcon width={18} height={18} strokeWidth={1.5} />
+                </button>
+                <div
+                  className="relative h-[min(80vh,720px)] w-full max-w-3xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Image
+                    src={lightbox}
+                    alt="Full size attachment"
+                    fill
+                    sizes="800px"
+                    className="object-contain"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </AnimatePresence>

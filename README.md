@@ -31,8 +31,9 @@ Fill in:
 ### Database
 
 1. In Supabase SQL Editor, run `supabase/schema.sql`.
-2. Then run migrations in order under `supabase/migrations/` (`001` … `006`).
-   `005` = product reviews · `006` = chat photo attachments.
+2. Then run migrations in order under `supabase/migrations/` (`001` … `007`).
+   Especially run `004` or `007` if you see `brands_title does not exist`.
+   `005` reviews · `006` chat photos · `007` street + new-arrival expiry.
 
 ### Auth setup
 

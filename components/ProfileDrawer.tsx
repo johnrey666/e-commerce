@@ -271,6 +271,15 @@ export function ProfileDrawer({
                       />
                     </div>
                     <div className="sm:col-span-2">
+                      <label className={labelClass}>Street</label>
+                      <input
+                        className="input-field"
+                        placeholder="Street, building, unit…"
+                        value={form.street ?? ""}
+                        onChange={(e) => set("street")(e.target.value)}
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
                       <label className={labelClass}>Carrier</label>
                       <select
                         className="input-field"

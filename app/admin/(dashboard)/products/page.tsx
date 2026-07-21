@@ -120,6 +120,11 @@ export default function AdminProductsPage() {
                     className="[&_img]:transition-transform [&_img]:duration-700 [&_img]:group-hover/card:scale-[1.03]"
                   />
                   <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+                    {p.stock <= 0 && (
+                      <span className="bg-brand px-1.5 py-0.5 text-[7px] font-medium uppercase tracking-[0.16em] text-white">
+                        Sold Out
+                      </span>
+                    )}
                     {p.isNewArrival && (
                       <span className="bg-ink px-1.5 py-0.5 text-[7px] font-medium uppercase tracking-[0.16em] text-white">
                         New

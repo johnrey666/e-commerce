@@ -53,8 +53,8 @@ export default function HomePage() {
 
   return (
     <div className="bg-paper">
-      {/* ——— Hero — full-bleed video ——— */}
-      <section className="relative overflow-hidden bg-ink">
+      {/* ——— Hero — full-bleed video (always dark plane; ink token inverts in dark mode) ——— */}
+      <section className="relative overflow-hidden bg-black">
         <video
           autoPlay
           muted
@@ -65,8 +65,8 @@ export default function HomePage() {
           className="absolute inset-0 h-full w-full object-cover"
           src={content.heroVideoUrl}
         />
-        {/* Legibility veil */}
-        <div className="absolute inset-0 bg-gradient-to-b from-ink/55 via-ink/35 to-ink/60" />
+        {/* Legibility veil — fixed black so dark mode never washes the video */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
 
         <div className="relative z-10 mx-auto flex h-[82svh] max-w-3xl flex-col items-center justify-center px-6 text-center sm:h-[72vh] lg:h-[82vh]">
           <motion.p
@@ -106,14 +106,14 @@ export default function HomePage() {
             <span className="btn-running-glow inline-flex w-full sm:w-auto">
               <Link
                 href="/shop"
-                className="inline-flex w-full items-center justify-center bg-white px-10 py-4 text-[11px] font-medium uppercase tracking-[0.28em] text-ink transition-all duration-500 ease-out hover:bg-brand hover:text-white active:scale-[0.99] sm:w-auto"
+                className="inline-flex w-full items-center justify-center bg-white px-10 py-4 text-[11px] font-medium uppercase tracking-[0.28em] text-black transition-all duration-500 ease-out hover:bg-brand hover:text-white active:scale-[0.99] sm:w-auto"
               >
                 Explore the Collection
               </Link>
             </span>
             <Link
               href="/shop?section=new-arrivals"
-              className="inline-flex w-full items-center justify-center border border-white/50 px-10 py-4 text-[11px] font-medium uppercase tracking-[0.28em] text-white transition-all duration-500 ease-out hover:border-white hover:bg-white hover:text-ink active:scale-[0.99] sm:w-auto"
+              className="inline-flex w-full items-center justify-center border border-white/50 px-10 py-4 text-[11px] font-medium uppercase tracking-[0.28em] text-white transition-all duration-500 ease-out hover:border-white hover:bg-white hover:text-black active:scale-[0.99] sm:w-auto"
             >
               New Arrivals
             </Link>
@@ -170,7 +170,7 @@ export default function HomePage() {
                 <Reveal key={group.name.toLowerCase()} delay={i * 0.05}>
                   <Link
                     href={`/shop?category=${group.ids.join(",")}`}
-                    className="group relative block aspect-[4/5] overflow-hidden bg-brand-soft"
+                    className="group relative block aspect-[4/5] overflow-hidden bg-brand-soft shadow-[0_18px_40px_-18px_rgba(0,0,0,0.35)] transition-shadow duration-500 dark:shadow-[0_20px_48px_-16px_rgba(0,0,0,0.85)]"
                   >
                     <Image
                       src={img}
@@ -179,12 +179,12 @@ export default function HomePage() {
                       sizes="220px"
                       className="object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/5 to-transparent transition-opacity duration-500 group-hover:from-ink/80" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent transition-opacity duration-500 group-hover:from-black/85" />
                     <div className="absolute inset-x-0 bottom-0 p-5 text-center">
-                      <p className="font-display text-lg font-medium text-paper">
+                      <p className="font-display text-lg font-medium text-white">
                         {group.name}
                       </p>
-                      <p className="mt-1 text-[9px] font-medium uppercase tracking-[0.3em] text-paper/60">
+                      <p className="mt-1 text-[9px] font-medium uppercase tracking-[0.3em] text-white/60">
                         {count} {count === 1 ? "piece" : "pieces"}
                       </p>
                     </div>
@@ -196,24 +196,24 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ——— Manifesto ——— */}
-      <section className="relative overflow-hidden border-t border-ink/8 bg-ink py-24 sm:py-32">
+      {/* ——— Manifesto — fixed dark plane (bg-ink becomes light in dark mode) ——— */}
+      <section className="relative overflow-hidden border-t border-ink/8 bg-black py-24 sm:py-32">
         <HoodieViewer />
         <div className="pointer-events-none relative z-10 mx-auto max-w-2xl px-5 text-center sm:px-10">
           <Reveal>
-            <p className="text-[9px] font-medium uppercase tracking-[0.45em] text-paper/40">
+            <p className="text-[9px] font-medium uppercase tracking-[0.45em] text-white/40">
               The Brand Philosophy
             </p>
-            <p className="mt-8 font-display text-2xl font-medium leading-relaxed text-paper sm:text-[1.75rem]">
+            <p className="mt-8 font-display text-2xl font-medium leading-relaxed text-white sm:text-[1.75rem]">
               &ldquo;Luxury is not about more.
               <br />
-              <em className="font-normal italic text-paper/70">
+              <em className="font-normal italic text-white/70">
                 It&apos;s about the one that cannot be repeated.
               </em>
               &rdquo;
             </p>
-            <div className="mx-auto mt-8 h-px w-12 bg-paper/25" />
-            <p className="mt-6 text-[11px] uppercase tracking-[0.3em] text-paper/40">
+            <div className="mx-auto mt-8 h-px w-12 bg-white/25" />
+            <p className="mt-6 text-[11px] uppercase tracking-[0.3em] text-white/40">
               Good Catch · Curated Vintage
             </p>
           </Reveal>

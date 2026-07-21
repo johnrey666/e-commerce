@@ -14,6 +14,7 @@ interface ProductRow {
   discount_price: number | null;
   on_sale: boolean;
   is_new_arrival: boolean;
+  new_arrival_until: string | null;
   category_id: string;
   category_ids: string[];
   brand_id: string;
@@ -27,7 +28,17 @@ interface ProductRow {
 
 type ProductInput = Omit<Product, "id" | "createdAt">;
 
+function isNewArrivalActive(
+  flagged: boolean,
+  until: string | null | undefined
+): boolean {
+  if (!flagged) return false;
+  if (!until) return true;
+  return new Date(until).getTime() > Date.now();
+}
+
 function mapProduct(row: ProductRow): Product {
+  const until = row.new_arrival_until ?? undefined;
   return {
     id: row.id,
     name: row.name,
@@ -36,7 +47,8 @@ function mapProduct(row: ProductRow): Product {
     discountPrice:
       row.discount_price == null ? undefined : Number(row.discount_price),
     onSale: row.on_sale,
-    isNewArrival: row.is_new_arrival,
+    isNewArrival: isNewArrivalActive(row.is_new_arrival, until ?? null),
+    newArrivalUntil: until,
     categoryIds:
       row.category_ids?.length > 0 ? row.category_ids : [row.category_id],
     brandId: row.brand_id,
@@ -61,6 +73,17 @@ function productPayload(product: ProductInput | Partial<ProductInput>) {
   if (product.onSale !== undefined) payload.on_sale = product.onSale;
   if (product.isNewArrival !== undefined) {
     payload.is_new_arrival = product.isNewArrival;
+    if (product.isNewArrival) {
+      const until =
+        product.newArrivalUntil ??
+        new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
+      payload.new_arrival_until = until;
+    } else {
+      payload.new_arrival_until = null;
+    }
+  }
+  if (product.newArrivalUntil !== undefined && product.isNewArrival === undefined) {
+    payload.new_arrival_until = product.newArrivalUntil ?? null;
   }
   if (product.categoryIds !== undefined) {
     payload.category_ids = product.categoryIds;
@@ -78,13 +101,38 @@ function productPayload(product: ProductInput | Partial<ProductInput>) {
 }
 
 export async function fetchProducts(): Promise<Product[]> {
-  const { data, error } = await createClient()
+  const supabase = createClient();
+  const { data, error } = await supabase
     .from("products")
     .select("*")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data as ProductRow[]).map(mapProduct);
+
+  const rows = data as ProductRow[];
+  const expiredIds = rows
+    .filter(
+      (r) =>
+        r.is_new_arrival &&
+        r.new_arrival_until &&
+        new Date(r.new_arrival_until).getTime() <= Date.now()
+    )
+    .map((r) => r.id);
+
+  if (expiredIds.length > 0) {
+    void supabase
+      .from("products")
+      .update({ is_new_arrival: false, new_arrival_until: null })
+      .in("id", expiredIds);
+  }
+
+  return rows.map((row) =>
+    mapProduct(
+      expiredIds.includes(row.id)
+        ? { ...row, is_new_arrival: false, new_arrival_until: null }
+        : row
+    )
+  );
 }
 
 export async function fetchBrands(): Promise<Brand[]> {

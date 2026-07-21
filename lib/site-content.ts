@@ -128,12 +128,35 @@ export async function updateLandingContent(
     payload.store_info = patch.storeInfo;
   }
 
-  const { data, error } = await createClient()
+  const supabase = createClient();
+  let { data, error } = await supabase
     .from("site_content")
     .update(payload)
     .eq("id", "landing")
     .select(SELECT_COLS)
     .single();
+
+  // Older DBs missing brands_title / store_info — retry without those columns.
+  if (
+    error &&
+    (error.message.includes("brands_title") ||
+      error.message.includes("store_info"))
+  ) {
+    const legacyPayload = { ...payload };
+    delete legacyPayload.brands_title;
+    delete legacyPayload.store_info;
+    const legacy = await supabase
+      .from("site_content")
+      .update(legacyPayload)
+      .eq("id", "landing")
+      .select("hero_video_url, brand_images, category_images")
+      .single();
+    if (legacy.error) throw new Error(legacy.error.message);
+    const mapped = mapLandingContent(legacy.data as SiteContentRow);
+    if (patch.brandsTitle) mapped.brandsTitle = patch.brandsTitle;
+    if (patch.storeInfo) mapped.storeInfo = patch.storeInfo;
+    return mapped;
+  }
 
   if (error) throw new Error(error.message);
   return mapLandingContent(data as SiteContentRow);

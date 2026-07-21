@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -71,10 +71,15 @@ export function ShopClient() {
   const section = searchParams.get("section"); // new-arrivals | on-sale
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [maxPrice, setMaxPrice] = useState<number>(Number.POSITIVE_INFINITY);
+  const [availability, setAvailability] = useState<"all" | "available" | "sold-out">(
+    "all"
+  );
   const [sort, setSort] = useState<SortKey>("newest");
   const [sortOpen, setSortOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [expandedParents, setExpandedParents] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 30;
 
   const parentCategories = useMemo(
     () => categories.filter((c) => c.parentId === null),
@@ -137,6 +142,9 @@ export function ShopClient() {
       list = list.filter((p) => p.sizes.some((s) => selectedSizes.includes(s)));
     list = list.filter((p) => effectivePrice(p) <= maxPrice);
 
+    if (availability === "available") list = list.filter((p) => p.stock > 0);
+    if (availability === "sold-out") list = list.filter((p) => p.stock <= 0);
+
     switch (sort) {
       case "newest":
         list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -154,8 +162,26 @@ export function ShopClient() {
         list.sort((a, b) => b.name.localeCompare(a.name));
         break;
     }
+
+    // Always surface in-stock pieces first (within the chosen sort).
+    list.sort((a, b) => {
+      const aOut = a.stock <= 0 ? 1 : 0;
+      const bOut = b.stock <= 0 ? 1 : 0;
+      return aOut - bOut;
+    });
+
     return list;
-  }, [products, section, query, selectedCategories, categoryMatchSet, selectedBrands, selectedSizes, maxPrice, sort]);
+  }, [products, section, query, selectedCategories, categoryMatchSet, selectedBrands, selectedSizes, maxPrice, sort, availability]);
+
+  // Reset page when filters change
+  const filterKey = `${section}|${query}|${selectedCategories.join()}|${selectedBrands.join()}|${selectedSizes.join()}|${maxPrice}|${sort}|${availability}`;
+  useEffect(() => {
+    setPage(1);
+  }, [filterKey]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const paged = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
 
   const toggle = (list: string[], id: string) =>
     list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
@@ -164,7 +190,8 @@ export function ShopClient() {
     selectedCategories.length +
     selectedBrands.length +
     selectedSizes.length +
-    (maxPrice < priceCeiling ? 1 : 0);
+    (maxPrice < priceCeiling ? 1 : 0) +
+    (availability !== "all" ? 1 : 0);
 
   const heading =
     section === "new-arrivals"
@@ -175,6 +202,35 @@ export function ShopClient() {
 
   const filterPanel = (
     <div className="space-y-9">
+      <fieldset>
+        <legend className="mb-4 text-[10px] font-medium uppercase tracking-[0.35em] text-ink/50">
+          Availability
+        </legend>
+        <div className="flex flex-col gap-2">
+          {(
+            [
+              ["all", "All"],
+              ["available", "Available"],
+              ["sold-out", "Sold Out"],
+            ] as const
+          ).map(([value, label]) => (
+            <label
+              key={value}
+              className="flex cursor-pointer items-center gap-3 text-[13px] text-ink/80 hover:text-ink"
+            >
+              <input
+                type="radio"
+                name="availability"
+                checked={availability === value}
+                onChange={() => setAvailability(value)}
+                className="size-3.5 accent-ink"
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
       <fieldset>
         <legend className="mb-4 text-[10px] font-medium uppercase tracking-[0.35em] text-ink/50">
           Category
@@ -482,12 +538,13 @@ export function ShopClient() {
               </p>
             </div>
           ) : (
+            <>
             <motion.div
               layout
               className="grid grid-cols-2 gap-x-5 gap-y-12 sm:grid-cols-3 sm:gap-x-6 xl:grid-cols-4"
             >
               <AnimatePresence mode="popLayout">
-                {filtered.map((p, i) => (
+                {paged.map((p, i) => (
                   <motion.div
                     key={p.id}
                     layout
@@ -505,6 +562,30 @@ export function ShopClient() {
                 ))}
               </AnimatePresence>
             </motion.div>
+            {totalPages > 1 && (
+              <div className="mt-12 flex items-center justify-center gap-3">
+                <button
+                  type="button"
+                  disabled={pageSafe <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="border border-ink/15 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.2em] text-ink/55 disabled:opacity-35"
+                >
+                  Prev
+                </button>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-ink/40">
+                  {pageSafe} / {totalPages}
+                </p>
+                <button
+                  type="button"
+                  disabled={pageSafe >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="border border-ink/15 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.2em] text-ink/55 disabled:opacity-35"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+            </>
           )}
         </div>
       </div>

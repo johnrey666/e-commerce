@@ -259,6 +259,9 @@ export default function AccountOrdersPage() {
                           <p className="mt-1.5">
                             {order.customer.firstName} {order.customer.lastName}
                           </p>
+                          {order.customer.street ? (
+                            <p>{order.customer.street}</p>
+                          ) : null}
                           <p>
                             {order.customer.barangay}, {order.customer.city}
                           </p>
@@ -291,6 +294,8 @@ export default function AccountOrdersPage() {
           onClose={() => setChatOrder(null)}
           orderId={chatOrder.id}
           orderLabel={chatOrder.id}
+          orderItems={chatOrder.items}
+          orderTotal={chatOrder.total}
           senderId={userId}
           senderRole="user"
         />

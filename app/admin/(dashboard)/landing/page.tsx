@@ -258,9 +258,9 @@ export default function AdminLandingPage() {
               Brand logos
             </h2>
             <p className="mt-1 text-[12px] text-ink/45">
-              Upload any number of partner logos — or none. Each can be replaced
-              or removed. The strip on the storefront only shows what you add
-              here.
+              Preview logos with × to remove, + to add more. Hover a logo to
+              replace it. The strip on the storefront only shows what you add
+              here (can be empty).
             </p>
           </div>
         </div>
@@ -288,48 +288,27 @@ export default function AdminLandingPage() {
         </div>
 
         <div className="mt-8">
-          <HeroGallery
-            images={content.brandImages}
-            title={content.brandsTitle}
-          />
-        </div>
-
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {content.brandImages.map((url, index) => (
-            <div key={`${url}-${index}`} className="border border-ink/10 p-3">
-              <div className="relative aspect-square bg-paper">
+          <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.24em] text-ink/45">
+            Preview · {content.brandImages.length} logo
+            {content.brandImages.length === 1 ? "" : "s"}
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            {content.brandImages.map((url, index) => (
+              <div
+                key={`${url}-${index}`}
+                className="group relative size-20 border border-ink/10 bg-paper sm:size-24"
+              >
                 <Image
                   src={url}
                   alt={`Partner brand ${index + 1}`}
                   fill
-                  sizes="160px"
-                  className="object-contain p-3"
-                />
-              </div>
-              <p className="my-2 text-center text-[9px] font-medium uppercase tracking-[0.2em] text-ink/45">
-                Logo {index + 1}
-              </p>
-              <div className="flex flex-col gap-2">
-                <UploadControl
-                  label="Replace"
-                  accept="image/jpeg,image/png,image/webp,image/avif"
-                  disabled={busy !== null}
-                  onFile={(file) =>
-                    void uploadAndSave(
-                      file,
-                      `brand-${index + 1}`,
-                      url,
-                      (nextUrl) => {
-                        const next = [...content.brandImages];
-                        next[index] = nextUrl;
-                        return { brandImages: next };
-                      }
-                    )
-                  }
+                  sizes="96px"
+                  className="object-contain p-2"
                 />
                 <button
                   type="button"
                   disabled={busy !== null}
+                  aria-label={`Remove logo ${index + 1}`}
                   onClick={() => {
                     void (async () => {
                       setBusy(`brand-del-${index}`);
@@ -354,26 +333,63 @@ export default function AdminLandingPage() {
                       }
                     })();
                   }}
-                  className="border border-brand/25 px-3 py-2 text-[9px] font-medium uppercase tracking-[0.2em] text-brand hover:bg-brand hover:text-white disabled:opacity-50"
+                  className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center bg-ink text-[11px] text-white shadow-sm transition-opacity hover:bg-brand disabled:opacity-50"
                 >
-                  Remove
+                  ×
                 </button>
+                <label className="absolute inset-x-0 bottom-0 cursor-pointer bg-ink/70 py-1 text-center text-[7px] font-medium uppercase tracking-[0.16em] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  Replace
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    disabled={busy !== null}
+                    className="sr-only"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) {
+                        void uploadAndSave(
+                          file,
+                          `brand-${index + 1}`,
+                          url,
+                          (nextUrl) => {
+                            const next = [...content.brandImages];
+                            next[index] = nextUrl;
+                            return { brandImages: next };
+                          }
+                        );
+                      }
+                      event.target.value = "";
+                    }}
+                  />
+                </label>
               </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <UploadControl
-            label="Add Brand Logo"
-            accept="image/jpeg,image/png,image/webp,image/avif"
-            disabled={busy !== null}
-            onFile={(file) =>
-              void uploadAndSave(file, `brand-new`, "", (url) => ({
-                brandImages: [...content.brandImages, url],
-              }))
-            }
-          />
+            ))}
+            <label
+              className={`flex size-20 cursor-pointer flex-col items-center justify-center border border-dashed border-ink/25 text-ink/40 transition-colors hover:border-ink hover:text-ink sm:size-24 ${
+                busy !== null ? "pointer-events-none opacity-50" : ""
+              }`}
+            >
+              <span className="text-2xl leading-none">+</span>
+              <span className="mt-1 text-[8px] font-medium uppercase tracking-[0.18em]">
+                Add
+              </span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                disabled={busy !== null}
+                className="sr-only"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    void uploadAndSave(file, `brand-new`, "", (url) => ({
+                      brandImages: [...content.brandImages, url],
+                    }));
+                  }
+                  event.target.value = "";
+                }}
+              />
+            </label>
+          </div>
           {content.brandImages.length > 0 && (
             <button
               type="button"
@@ -400,10 +416,26 @@ export default function AdminLandingPage() {
                   }
                 })();
               }}
-              className="border border-ink/20 px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.24em] text-ink/60 hover:border-ink hover:text-ink disabled:opacity-50"
+              className="mt-5 border border-ink/20 px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.24em] text-ink/60 hover:border-ink hover:text-ink disabled:opacity-50"
             >
               Remove All Logos
             </button>
+          )}
+        </div>
+
+        <div className="mt-10 border-t border-ink/8 pt-8">
+          <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.24em] text-ink/45">
+            Live strip preview
+          </p>
+          <HeroGallery
+            images={content.brandImages}
+            title={content.brandsTitle}
+          />
+          {content.brandImages.length === 0 && (
+            <p className="mt-4 text-[12px] text-ink/40">
+              No logos yet — the storefront strip stays hidden until you add
+              one.
+            </p>
           )}
         </div>
       </section>

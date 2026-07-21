@@ -30,6 +30,7 @@ const emptyForm: CheckoutDetails = {
   postalCode: "",
   barangay: "",
   city: "",
+  street: "",
   pinnedLocation: undefined,
   notes: "",
   paymentMethod: "paymongo",
@@ -82,6 +83,7 @@ export default function CheckoutClient() {
       postalCode: savedShipping.postalCode || f.postalCode,
       barangay: savedShipping.barangay || f.barangay,
       city: savedShipping.city || f.city,
+      street: savedShipping.street || f.street,
       pinnedLocation: savedShipping.pinnedLocation || f.pinnedLocation,
       notes: savedShipping.notes || f.notes,
       shippingCarrier: savedShipping.shippingCarrier || f.shippingCarrier,
@@ -101,11 +103,6 @@ export default function CheckoutClient() {
 
     if (!isCustomer) {
       router.push(`/login?next=${encodeURIComponent("/checkout")}`);
-      return;
-    }
-
-    if (!form.pinnedLocation) {
-      setError("Please pin your location on the map.");
       return;
     }
 
@@ -377,10 +374,27 @@ export default function CheckoutClient() {
                   className={inputClass}
                 />
               </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="street" className={labelClass}>
+                  Street *
+                </label>
+                <input
+                  id="street"
+                  required
+                  autoComplete="street-address"
+                  placeholder="Street, building, unit…"
+                  value={form.street}
+                  onChange={(e) => set("street")(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
             </div>
 
             <div className="mt-5">
-              <span className={labelClass}>Pin location *</span>
+              <span className={labelClass}>
+                Pin location{" "}
+                <span className="normal-case text-ink/35">(optional)</span>
+              </span>
               <MapPicker
                 onPin={set("pinnedLocation")}
                 initialPin={form.pinnedLocation}

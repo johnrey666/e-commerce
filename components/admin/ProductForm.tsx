@@ -389,6 +389,9 @@ export function ProductForm({ product }: { product?: Product }) {
               className="size-4 accent-[#c1121f]"
             />
             New Arrival
+            <span className="ml-1 font-normal text-ink/40">
+              (auto-clears after 10 days)
+            </span>
           </label>
         </div>
         {form.onSale && !form.discountPrice && (

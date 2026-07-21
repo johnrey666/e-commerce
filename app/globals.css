@@ -173,3 +173,8 @@ html.dark body {
 html.dark .btn-primary {
   color: #fff;
 }
+
+/* Keep hero CTA glow readable on dark video in either theme */
+html.dark .btn-running-glow {
+  filter: brightness(1.05);
+}

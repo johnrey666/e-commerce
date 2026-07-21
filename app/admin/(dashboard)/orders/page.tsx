@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { OrderChatModal } from "@/components/OrderChatModal";
 import { ProductImage } from "@/components/ProductImage";
 import { StarRating } from "@/components/StarRating";
@@ -44,6 +44,8 @@ export default function AdminOrdersPage() {
   const [syncing, setSyncing] = useState(false);
   const [syncNote, setSyncNote] = useState<string | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [listPage, setListPage] = useState(1);
+  const LIST_PAGE = 25;
 
   useEffect(() => {
     let cancelled = false;
@@ -74,20 +76,15 @@ export default function AdminOrdersPage() {
     };
   }, [fetchOrders]);
 
-  const orderIdsKey = useMemo(
-    () => orders.map((o) => o.id).join(","),
-    [orders]
-  );
-
   useEffect(() => {
-    if (orders.length === 0) {
+    if (!expandedId) {
       setReviews([]);
       return;
     }
     let cancelled = false;
     void (async () => {
       try {
-        const rows = await fetchReviewsForOrders(orders.map((o) => o.id));
+        const rows = await fetchReviewsForOrders([expandedId]);
         if (!cancelled) setReviews(rows);
       } catch {
         if (!cancelled) setReviews([]);
@@ -96,7 +93,7 @@ export default function AdminOrdersPage() {
     return () => {
       cancelled = true;
     };
-  }, [orderIdsKey, orders]);
+  }, [expandedId]);
 
   const reviewFor = (orderId: string, productId: string) =>
     reviews.find((r) => r.orderId === orderId && r.productId === productId);
@@ -105,6 +102,13 @@ export default function AdminOrdersPage() {
     statusFilter === "All"
       ? orders
       : orders.filter((o) => o.status === statusFilter);
+
+  const listPages = Math.max(1, Math.ceil(filtered.length / LIST_PAGE));
+  const pageSafe = Math.min(listPage, listPages);
+  const paged = filtered.slice(
+    (pageSafe - 1) * LIST_PAGE,
+    pageSafe * LIST_PAGE
+  );
 
   return (
     <div>
@@ -155,7 +159,10 @@ export default function AdminOrdersPage() {
         {(["All", ...STATUSES] as const).map((s) => (
           <button
             key={s}
-            onClick={() => setStatusFilter(s)}
+            onClick={() => {
+              setStatusFilter(s);
+              setListPage(1);
+            }}
             className={`px-4 py-2 text-[9px] font-medium uppercase tracking-[0.22em] transition-all duration-300 sm:px-5 sm:py-2.5 sm:text-[10px] sm:tracking-[0.24em] ${
               statusFilter === s
                 ? "bg-ink text-white"
@@ -188,7 +195,7 @@ export default function AdminOrdersPage() {
         </div>
       ) : (
         <ul className="mt-8 grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {(mounted ? filtered : []).map((order, index) => {
+          {(mounted ? paged : []).map((order, index) => {
             const expanded = expandedId === order.id;
             const cover = order.items[0]?.image ?? "";
             return (
@@ -196,7 +203,7 @@ export default function AdminOrdersPage() {
                 key={order.id}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03, duration: 0.35 }}
+                transition={{ delay: Math.min(index, 12) * 0.03, duration: 0.35 }}
                 className={`group/card overflow-hidden border border-ink/10 bg-surface ${
                   expanded ? "col-span-2 md:col-span-2 lg:col-span-2" : ""
                 }`}
@@ -377,6 +384,30 @@ export default function AdminOrdersPage() {
             );
           })}
         </ul>
+      )}
+
+      {mounted && !loading && filtered.length > LIST_PAGE && (
+        <div className="mt-6 flex items-center justify-between border-t border-ink/8 pt-4">
+          <button
+            type="button"
+            disabled={pageSafe <= 1}
+            onClick={() => setListPage((p) => Math.max(1, p - 1))}
+            className="text-[10px] uppercase tracking-[0.2em] text-ink/45 disabled:opacity-30"
+          >
+            Prev
+          </button>
+          <span className="text-[10px] text-ink/35">
+            {pageSafe} / {listPages}
+          </span>
+          <button
+            type="button"
+            disabled={pageSafe >= listPages}
+            onClick={() => setListPage((p) => Math.min(listPages, p + 1))}
+            className="text-[10px] uppercase tracking-[0.2em] text-ink/45 disabled:opacity-30"
+          >
+            Next
+          </button>
+        </div>
       )}
 
       {chatOrder && userId && (

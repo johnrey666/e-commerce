@@ -13,9 +13,18 @@ export default function AdminProductsPage() {
   const deleteProduct = useCatalogStore((s) => s.deleteProduct);
   const updateProduct = useCatalogStore((s) => s.updateProduct);
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 40;
 
   const filtered = products.filter((p) =>
     p.name.toLowerCase().includes(query.trim().toLowerCase())
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const paged = filtered.slice(
+    (pageSafe - 1) * PAGE_SIZE,
+    pageSafe * PAGE_SIZE
   );
 
   const handleDelete = async (id: string, name: string) => {
@@ -66,7 +75,10 @@ export default function AdminProductsPage() {
         <input
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(1);
+          }}
           placeholder="Search products…"
           aria-label="Search products"
           className="input-field !pl-11 text-base"
@@ -96,7 +108,7 @@ export default function AdminProductsPage() {
         </p>
       ) : (
         <ul className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {filtered.map((p) => {
+          {paged.map((p) => {
             const percent = discountPercent(p);
             const brandName = brands.find((b) => b.id === p.brandId)?.name;
             const categoryLabel =
@@ -196,6 +208,30 @@ export default function AdminProductsPage() {
             );
           })}
         </ul>
+      )}
+
+      {ready && filtered.length > PAGE_SIZE && (
+        <div className="mt-6 flex items-center justify-between border-t border-ink/8 pt-4">
+          <button
+            type="button"
+            disabled={pageSafe <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="text-[10px] uppercase tracking-[0.2em] text-ink/45 disabled:opacity-30"
+          >
+            Prev
+          </button>
+          <span className="text-[10px] text-ink/35">
+            {pageSafe} / {totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={pageSafe >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            className="text-[10px] uppercase tracking-[0.2em] text-ink/45 disabled:opacity-30"
+          >
+            Next
+          </button>
+        </div>
       )}
     </div>
   );

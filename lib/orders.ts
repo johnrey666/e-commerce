@@ -223,34 +223,43 @@ async function fetchItemsForOrders(
   if (orderIds.length === 0) return map;
 
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("order_items")
-    .select("*")
-    .in("order_id", orderIds);
+  // Batch in chunks to stay under PostgREST URL / payload limits.
+  const CHUNK = 80;
+  for (let i = 0; i < orderIds.length; i += CHUNK) {
+    const chunk = orderIds.slice(i, i + CHUNK);
+    const { data, error } = await supabase
+      .from("order_items")
+      .select("order_id, product_id, name, unit_price, image, size, quantity")
+      .in("order_id", chunk);
 
-  if (error || !data) return map;
+    if (error || !data) continue;
 
-  for (const row of data as OrderItemRow[]) {
-    const list = map.get(row.order_id) ?? [];
-    list.push({
-      productId: row.product_id,
-      name: row.name,
-      unitPrice: Number(row.unit_price),
-      image: row.image,
-      size: row.size ?? undefined,
-      quantity: row.quantity,
-    });
-    map.set(row.order_id, list);
+    for (const row of data as OrderItemRow[]) {
+      const list = map.get(row.order_id) ?? [];
+      list.push({
+        productId: row.product_id,
+        name: row.name,
+        unitPrice: Number(row.unit_price),
+        image: row.image,
+        size: row.size ?? undefined,
+        quantity: row.quantity,
+      });
+      map.set(row.order_id, list);
+    }
   }
   return map;
 }
 
-export async function fetchMyOrders(): Promise<Order[]> {
+const ORDER_LIST_SELECT =
+  "id, user_id, total, status, payment_status, payment_method, shipping_carrier, first_name, last_name, contact_number, email, country, region, postal_code, barangay, city, street, pinned_location, notes, paymongo_checkout_id, created_at";
+
+export async function fetchMyOrders(limit = 100): Promise<Order[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("orders")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select(ORDER_LIST_SELECT)
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
   if (error || !data) {
     console.warn("[orders] fetchMyOrders:", error?.message);
@@ -263,13 +272,14 @@ export async function fetchMyOrders(): Promise<Order[]> {
 }
 
 /** Admin ledger — only successfully paid orders. */
-export async function fetchAllOrders(): Promise<Order[]> {
+export async function fetchAllOrders(limit = 200): Promise<Order[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("orders")
-    .select("*")
+    .select(ORDER_LIST_SELECT)
     .eq("payment_status", "Paid")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
   if (error || !data) {
     console.warn("[orders] fetchAllOrders:", error?.message);
@@ -297,21 +307,24 @@ export async function fetchOrderById(orderId: string): Promise<Order | null> {
 }
 
 export async function fetchOrderMessages(
-  orderId: string
+  orderId: string,
+  limit = 100
 ): Promise<OrderMessage[]> {
   const supabase = createClient();
+  // Newest N messages, then reverse so the UI stays chronological.
   const { data, error } = await supabase
     .from("order_messages")
-    .select("*")
+    .select("id, order_id, sender_id, sender_role, body, image_url, created_at")
     .eq("order_id", orderId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
   if (error || !data) {
     console.warn("[orders] fetchOrderMessages:", error?.message);
     return [];
   }
 
-  return (data as MessageRow[]).map(mapMessage);
+  return (data as MessageRow[]).map(mapMessage).reverse();
 }
 
 export async function sendOrderMessage(input: {

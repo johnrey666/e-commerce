@@ -9,7 +9,7 @@ import type { Brand, Category, Product } from "./types";
 interface ProductRow {
   id: string;
   name: string;
-  description: string;
+  description?: string | null;
   price: number;
   discount_price: number | null;
   on_sale: boolean;
@@ -42,7 +42,7 @@ function mapProduct(row: ProductRow): Product {
   return {
     id: row.id,
     name: row.name,
-    description: row.description,
+    description: row.description ?? "",
     price: Number(row.price),
     discountPrice:
       row.discount_price == null ? undefined : Number(row.discount_price),
@@ -60,6 +60,12 @@ function mapProduct(row: ProductRow): Product {
     createdAt: row.created_at,
   };
 }
+
+/** Columns needed for grids/filters — omit long description payloads. */
+const PRODUCT_LIST_SELECT =
+  "id, name, price, discount_price, on_sale, is_new_arrival, new_arrival_until, category_id, category_ids, brand_id, condition, images, sizes, stock, tags, created_at";
+
+const PRODUCT_FULL_SELECT = `${PRODUCT_LIST_SELECT}, description`;
 
 function productPayload(product: ProductInput | Partial<ProductInput>) {
   const payload: Record<string, unknown> = {};
@@ -104,35 +110,46 @@ export async function fetchProducts(): Promise<Product[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("products")
-    .select("*")
+    .select(PRODUCT_LIST_SELECT)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
 
-  const rows = data as ProductRow[];
-  const expiredIds = rows
-    .filter(
-      (r) =>
-        r.is_new_arrival &&
-        r.new_arrival_until &&
-        new Date(r.new_arrival_until).getTime() <= Date.now()
-    )
-    .map((r) => r.id);
+  // Expiry is derived in mapProduct via isNewArrivalActive — no write-on-read.
+  return (data as ProductRow[]).map(mapProduct);
+}
 
-  if (expiredIds.length > 0) {
-    void supabase
-      .from("products")
-      .update({ is_new_arrival: false, new_arrival_until: null })
-      .in("id", expiredIds);
-  }
+export async function fetchProductById(id: string): Promise<Product | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_FULL_SELECT)
+    .eq("id", id)
+    .maybeSingle();
 
-  return rows.map((row) =>
-    mapProduct(
-      expiredIds.includes(row.id)
-        ? { ...row, is_new_arrival: false, new_arrival_until: null }
-        : row
-    )
-  );
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return mapProduct(data as ProductRow);
+}
+
+/** Related pieces in shared categories — capped for PDP. */
+export async function fetchRelatedProducts(
+  productId: string,
+  categoryIds: string[],
+  limit = 4
+): Promise<Product[]> {
+  if (categoryIds.length === 0) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_LIST_SELECT)
+    .neq("id", productId)
+    .overlaps("category_ids", categoryIds)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+  return (data as ProductRow[]).map(mapProduct);
 }
 
 export async function fetchBrands(): Promise<Brand[]> {

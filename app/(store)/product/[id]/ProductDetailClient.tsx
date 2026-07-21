@@ -8,18 +8,21 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { Reveal } from "@/components/Reveal";
 import { StarRating } from "@/components/StarRating";
+import { fetchProductById, fetchRelatedProducts } from "@/lib/api";
 import { discountPercent, effectivePrice, formatPrice } from "@/lib/format";
 import { useCatalog } from "@/lib/hooks";
 import { averageRating, fetchReviewsForProduct } from "@/lib/reviews";
 import { useCartStore } from "@/lib/store/cart-store";
-import type { ProductReview } from "@/lib/types";
+import type { Product, ProductReview } from "@/lib/types";
 
 export function ProductDetailClient({ id }: { id: string }) {
-  const { products, brands, categories, ready } = useCatalog();
+  const { brands, categories, ready: catalogReady } = useCatalog();
   const addItem = useCartStore((s) => s.addItem);
   const openDrawer = useCartStore((s) => s.openDrawer);
 
-  const product = products.find((p) => p.id === id);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [related, setRelated] = useState<Product[]>([]);
+  const [productReady, setProductReady] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
   const [size, setSize] = useState<string | undefined>(undefined);
   const [added, setAdded] = useState(false);
@@ -27,9 +30,45 @@ export function ProductDetailClient({ id }: { id: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    setProductReady(false);
+    setImageIndex(0);
+    setSize(undefined);
+
     void (async () => {
       try {
-        const rows = await fetchReviewsForProduct(id);
+        const row = await fetchProductById(id);
+        if (cancelled) return;
+        setProduct(row);
+        if (row) {
+          const relatedRows = await fetchRelatedProducts(
+            row.id,
+            row.categoryIds,
+            4
+          );
+          if (!cancelled) setRelated(relatedRows);
+        } else {
+          setRelated([]);
+        }
+      } catch {
+        if (!cancelled) {
+          setProduct(null);
+          setRelated([]);
+        }
+      } finally {
+        if (!cancelled) setProductReady(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await fetchReviewsForProduct(id, 50);
         if (!cancelled) setReviews(rows);
       } catch {
         if (!cancelled) setReviews([]);
@@ -40,7 +79,7 @@ export function ProductDetailClient({ id }: { id: string }) {
     };
   }, [id]);
 
-  if (!ready) {
+  if (!productReady || !catalogReady) {
     return (
       <div className="mx-auto max-w-[90rem] px-5 py-32 text-center text-[11px] uppercase tracking-[0.3em] text-ink/40 sm:px-10">
         Loading…
@@ -74,14 +113,6 @@ export function ProductDetailClient({ id }: { id: string }) {
   const soldOut = product.stock <= 0;
   const chosenSize = size ?? product.sizes[0];
   const avg = averageRating(reviews);
-
-  const related = products
-    .filter(
-      (p) =>
-        p.id !== product.id &&
-        p.categoryIds.some((id) => product.categoryIds.includes(id))
-    )
-    .slice(0, 4);
 
   const handleAdd = () => {
     addItem({
@@ -185,7 +216,7 @@ export function ProductDetailClient({ id }: { id: string }) {
 
           {avg != null && (
             <div className="mt-3 flex items-center gap-2">
-              <StarRating value={Math.round(avg)} size={14} />
+              <StarRating value={avg} size={14} label="Average rating" />
               <span className="text-[12px] text-ink/45">
                 {avg.toFixed(1)} · {reviews.length}{" "}
                 {reviews.length === 1 ? "review" : "reviews"}

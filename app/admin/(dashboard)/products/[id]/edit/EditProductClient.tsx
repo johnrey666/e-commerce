@@ -1,11 +1,32 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { ProductForm } from "@/components/admin/ProductForm";
-import { useCatalog } from "@/lib/hooks";
+import { fetchProductById } from "@/lib/api";
+import type { Product } from "@/lib/types";
 
 export function EditProductClient({ id }: { id: string }) {
-  const { products, ready } = useCatalog();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setReady(false);
+    void (async () => {
+      try {
+        const row = await fetchProductById(id);
+        if (!cancelled) setProduct(row);
+      } catch {
+        if (!cancelled) setProduct(null);
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   if (!ready) {
     return (
@@ -14,8 +35,6 @@ export function EditProductClient({ id }: { id: string }) {
       </p>
     );
   }
-
-  const product = products.find((p) => p.id === id);
 
   if (!product) {
     return (

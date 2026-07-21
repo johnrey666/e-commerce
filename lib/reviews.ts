@@ -27,15 +27,20 @@ function mapReview(row: ReviewRow): ProductReview {
   };
 }
 
+const REVIEW_LIST_SELECT =
+  "id, order_id, product_id, user_id, rating, body, product_name, reviewer_name, created_at";
+
 export async function fetchReviewsForProduct(
-  productId: string
+  productId: string,
+  limit = 50
 ): Promise<ProductReview[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("product_reviews")
-    .select("*")
+    .select(REVIEW_LIST_SELECT)
     .eq("product_id", productId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
   if (error) throw error;
   return ((data ?? []) as ReviewRow[]).map(mapReview);
@@ -48,7 +53,7 @@ export async function fetchReviewsForOrders(
   const supabase = createClient();
   const { data, error } = await supabase
     .from("product_reviews")
-    .select("*")
+    .select(REVIEW_LIST_SELECT)
     .in("order_id", orderIds);
 
   if (error) throw error;
@@ -56,11 +61,13 @@ export async function fetchReviewsForOrders(
 }
 
 /** Highest ratings first (5★ → 1★), then newest. */
-export async function fetchReviewsConsolidated(limit?: number): Promise<ProductReview[]> {
+export async function fetchReviewsConsolidated(
+  limit?: number
+): Promise<ProductReview[]> {
   const supabase = createClient();
   let query = supabase
     .from("product_reviews")
-    .select("*")
+    .select(REVIEW_LIST_SELECT)
     .order("rating", { ascending: false })
     .order("created_at", { ascending: false });
 
@@ -69,6 +76,64 @@ export async function fetchReviewsConsolidated(limit?: number): Promise<ProductR
   const { data, error } = await query;
   if (error) throw error;
   return ((data ?? []) as ReviewRow[]).map(mapReview);
+}
+
+/** Paginated shop-wide reviews (highest rated first). */
+export async function fetchReviewsPage(
+  page = 1,
+  pageSize = 20
+): Promise<{ reviews: ProductReview[]; total: number }> {
+  const supabase = createClient();
+  const from = Math.max(0, (page - 1) * pageSize);
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabase
+    .from("product_reviews")
+    .select(REVIEW_LIST_SELECT, { count: "exact" })
+    .order("rating", { ascending: false })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+  return {
+    reviews: ((data ?? []) as ReviewRow[]).map(mapReview),
+    total: count ?? 0,
+  };
+}
+
+/** Shop-wide average via SQL aggregate (falls back to rating column). */
+export async function fetchShopRatingSummary(): Promise<{
+  average: number | null;
+  count: number;
+}> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("shop_rating_summary");
+
+  if (!error && data != null) {
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) {
+      const count = Number(row.count ?? 0);
+      const average =
+        count === 0 || row.average == null
+          ? null
+          : Math.round(Number(row.average) * 10) / 10;
+      return { average, count };
+    }
+  }
+
+  // Fallback when RPC is not migrated yet.
+  const { data: ratings, error: fallbackError, count } = await supabase
+    .from("product_reviews")
+    .select("rating", { count: "exact" });
+
+  if (fallbackError) throw fallbackError;
+  const rows = (ratings ?? []) as { rating: number }[];
+  if (rows.length === 0) return { average: null, count: count ?? 0 };
+  const sum = rows.reduce((acc, r) => acc + Number(r.rating), 0);
+  return {
+    average: Math.round((sum / rows.length) * 10) / 10,
+    count: count ?? rows.length,
+  };
 }
 
 /** Landing preview: prefer 5★, then lower — still highest-first. */

@@ -4,21 +4,31 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Reveal } from "@/components/Reveal";
 import { StarRating } from "@/components/StarRating";
-import { fetchLandingReviews } from "@/lib/reviews";
+import { fetchLandingReviews, fetchShopRatingSummary } from "@/lib/reviews";
 import type { ProductReview } from "@/lib/types";
 
 export function ReviewsPreview() {
   const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [shopAverage, setShopAverage] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const rows = await fetchLandingReviews(3);
-        if (!cancelled) setReviews(rows);
+        const [rows, summary] = await Promise.all([
+          fetchLandingReviews(3),
+          fetchShopRatingSummary(),
+        ]);
+        if (!cancelled) {
+          setReviews(rows);
+          setShopAverage(summary.average);
+        }
       } catch {
-        if (!cancelled) setReviews([]);
+        if (!cancelled) {
+          setReviews([]);
+          setShopAverage(null);
+        }
       } finally {
         if (!cancelled) setReady(true);
       }
@@ -37,6 +47,14 @@ export function ReviewsPreview() {
           <div className="text-center">
             <p className="eyebrow">From the Community</p>
             <h2 className="section-title mt-4">Shop reviews</h2>
+            {shopAverage != null && (
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                <StarRating value={shopAverage} size={20} label="Shop rating" />
+                <p className="font-display text-xl font-medium text-ink">
+                  {shopAverage.toFixed(1)}
+                </p>
+              </div>
+            )}
             <p className="mx-auto mt-3 max-w-md text-[13px] leading-relaxed text-ink/45">
               Real notes from buyers across the collection.
             </p>

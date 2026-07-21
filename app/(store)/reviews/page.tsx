@@ -4,21 +4,54 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Reveal } from "@/components/Reveal";
 import { StarRating } from "@/components/StarRating";
-import { fetchReviewsConsolidated } from "@/lib/reviews";
+import {
+  fetchReviewsPage,
+  fetchShopRatingSummary,
+} from "@/lib/reviews";
 import type { ProductReview } from "@/lib/types";
+
+const PAGE_SIZE = 20;
 
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [shopAverage, setShopAverage] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const rows = await fetchReviewsConsolidated();
-        if (!cancelled) setReviews(rows);
+        const summary = await fetchShopRatingSummary();
+        if (!cancelled) setShopAverage(summary.average);
       } catch {
-        if (!cancelled) setReviews([]);
+        if (!cancelled) setShopAverage(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    void (async () => {
+      try {
+        const { reviews: rows, total: count } = await fetchReviewsPage(
+          page,
+          PAGE_SIZE
+        );
+        if (!cancelled) {
+          setReviews(rows);
+          setTotal(count);
+        }
+      } catch {
+        if (!cancelled) {
+          setReviews([]);
+          setTotal(0);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -26,7 +59,9 @@ export default function ReviewsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [page]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8 sm:py-20">
@@ -39,6 +74,17 @@ export default function ReviewsPage() {
           Consolidated feedback from every piece in the shop — highest rated
           first.
         </p>
+        {shopAverage != null && (
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <StarRating value={shopAverage} size={22} label="Shop rating" />
+            <p className="font-display text-xl font-medium text-ink">
+              {shopAverage.toFixed(1)}
+            </p>
+            <p className="text-[12px] text-ink/45">
+              {total} review{total === 1 ? "" : "s"}
+            </p>
+          </div>
+        )}
       </Reveal>
 
       {loading ? (
@@ -56,37 +102,62 @@ export default function ReviewsPage() {
           </Link>
         </div>
       ) : (
-        <ul className="mt-10 divide-y divide-ink/8 border-y border-ink/10">
-          {reviews.map((review) => (
-            <li key={review.id} className="py-6">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <StarRating value={review.rating} size={14} />
-                  <p className="mt-3 font-display text-lg font-medium text-ink">
-                    {review.body?.trim()
-                      ? `“${review.body.trim()}”`
-                      : "Loved this piece."}
-                  </p>
-                  <p className="mt-2 text-[12px] text-ink/50">
-                    <span className="font-medium text-ink/70">
-                      {review.reviewerName}
-                    </span>
-                    {" · "}
-                    <Link
-                      href={`/product/${review.productId}`}
-                      className="underline-offset-2 hover:underline"
-                    >
-                      {review.productName}
-                    </Link>
-                  </p>
+        <>
+          <ul className="mt-10 divide-y divide-ink/8 border-y border-ink/10">
+            {reviews.map((review) => (
+              <li key={review.id} className="py-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <StarRating value={review.rating} size={14} />
+                    <p className="mt-3 font-display text-lg font-medium text-ink">
+                      {review.body?.trim()
+                        ? `“${review.body.trim()}”`
+                        : "Loved this piece."}
+                    </p>
+                    <p className="mt-2 text-[12px] text-ink/50">
+                      <span className="font-medium text-ink/70">
+                        {review.reviewerName}
+                      </span>
+                      {" · "}
+                      <Link
+                        href={`/product/${review.productId}`}
+                        className="underline-offset-2 hover:underline"
+                      >
+                        {review.productName}
+                      </Link>
+                    </p>
+                  </div>
+                  <time className="shrink-0 text-[10px] uppercase tracking-[0.18em] text-ink/35">
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </time>
                 </div>
-                <time className="shrink-0 text-[10px] uppercase tracking-[0.18em] text-ink/35">
-                  {new Date(review.createdAt).toLocaleDateString()}
-                </time>
-              </div>
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+          {totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-between">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="text-[10px] uppercase tracking-[0.2em] text-ink/45 disabled:opacity-30"
+              >
+                Prev
+              </button>
+              <span className="text-[10px] text-ink/35">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="text-[10px] uppercase tracking-[0.2em] text-ink/45 disabled:opacity-30"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

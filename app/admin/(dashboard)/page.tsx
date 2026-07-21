@@ -3,11 +3,11 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { StarRating } from "@/components/StarRating";
 import { formatPrice } from "@/lib/format";
 import { useCatalog, useMounted } from "@/lib/hooks";
-import { averageRating, fetchReviewsConsolidated } from "@/lib/reviews";
+import { fetchShopRatingSummary } from "@/lib/reviews";
 import { useOrderStore } from "@/lib/store/order-store";
-import type { ProductReview } from "@/lib/types";
 
 type RangeKey = "month" | "year" | "all";
 
@@ -29,7 +29,7 @@ export default function AdminDashboardPage() {
   const orders = useOrderStore((s) => s.orders);
   const fetchOrders = useOrderStore((s) => s.fetchOrders);
   const [range, setRange] = useState<RangeKey>("month");
-  const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [storeRating, setStoreRating] = useState<number | null>(null);
   const [ordersPage, setOrdersPage] = useState(1);
   const [stockPage, setStockPage] = useState(1);
   const PAGE = 5;
@@ -42,10 +42,10 @@ export default function AdminDashboardPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const rows = await fetchReviewsConsolidated();
-        if (!cancelled) setReviews(rows);
+        const summary = await fetchShopRatingSummary();
+        if (!cancelled) setStoreRating(summary.average);
       } catch {
-        if (!cancelled) setReviews([]);
+        if (!cancelled) setStoreRating(null);
       }
     })();
     return () => {
@@ -72,7 +72,6 @@ export default function AdminDashboardPage() {
   const revenue = paidOrders.reduce((sum, o) => sum + o.total, 0);
   const onSale = products.filter((p) => p.onSale);
   const lowStock = products.filter((p) => p.stock <= 1);
-  const storeRating = averageRating(reviews);
 
   const orderPages = Math.max(1, Math.ceil(rangedOrders.length / PAGE));
   const stockPages = Math.max(1, Math.ceil(lowStock.length / PAGE));
@@ -110,9 +109,9 @@ export default function AdminDashboardPage() {
     },
     {
       label: "Store Rating",
-      value:
-        storeRating != null ? `${storeRating.toFixed(1)} ★` : "—",
+      value: storeRating != null ? storeRating.toFixed(1) : "—",
       href: "/reviews",
+      rating: storeRating as number | null | undefined,
     },
   ];
 
@@ -129,6 +128,24 @@ export default function AdminDashboardPage() {
           Add Product
         </Link>
       </div>
+
+      {storeRating != null && (
+        <div className="mt-8 flex flex-wrap items-center gap-3 border border-ink/10 bg-surface px-5 py-4 sm:px-6">
+          <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-ink/45">
+            Shop rating
+          </p>
+          <StarRating value={storeRating} size={20} label="Shop rating" />
+          <p className="font-display text-xl font-medium text-ink">
+            {storeRating.toFixed(1)}
+          </p>
+          <Link
+            href="/reviews"
+            className="ml-auto text-[10px] font-medium uppercase tracking-[0.22em] text-ink/45 transition-colors hover:text-ink"
+          >
+            View all reviews
+          </Link>
+        </div>
+      )}
 
       <div className="mt-8 flex flex-wrap gap-2">
         {(
@@ -168,9 +185,23 @@ export default function AdminDashboardPage() {
               <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-ink/45">
                 {stat.label}
               </p>
-              <p className="mt-3 font-display text-2xl font-medium text-ink transition-colors duration-300 group-hover:text-brand sm:text-3xl lg:text-4xl">
-                {stat.value}
-              </p>
+              {"rating" in stat && stat.rating != null ? (
+                <div className="mt-3 flex flex-col gap-2">
+                  <StarRating
+                    value={stat.rating}
+                    size={18}
+                    label="Store rating"
+                    className="transition-colors duration-300 group-hover:[&_.text-brand]:text-brand"
+                  />
+                  <p className="font-display text-2xl font-medium text-ink transition-colors duration-300 group-hover:text-brand sm:text-3xl">
+                    {stat.value}
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-3 font-display text-2xl font-medium text-ink transition-colors duration-300 group-hover:text-brand sm:text-3xl lg:text-4xl">
+                  {stat.value}
+                </p>
+              )}
             </Link>
           </motion.div>
         ))}

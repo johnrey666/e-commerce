@@ -36,7 +36,9 @@ export async function POST() {
       .from("orders")
       .select("id, paymongo_checkout_id")
       .eq("payment_status", "Pending")
-      .not("paymongo_checkout_id", "is", null);
+      .not("paymongo_checkout_id", "is", null)
+      .order("created_at", { ascending: true })
+      .limit(50);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -78,7 +80,9 @@ export async function POST() {
       .from("orders")
       .select("id")
       .eq("payment_status", "Paid")
-      .eq("inventory_applied", false);
+      .eq("inventory_applied", false)
+      .order("created_at", { ascending: true })
+      .limit(50);
 
     let inventoryApplied = 0;
     for (const row of needStock ?? []) {

@@ -73,7 +73,7 @@ export default function HomePage() {
             {...fadeUp}
             className="text-[10px] font-medium uppercase tracking-[0.4em] text-white/65"
           >
-            Est. Manila · One of One
+            Est. Bicol · One of One
           </motion.p>
 
           <motion.h1
@@ -202,7 +202,7 @@ export default function HomePage() {
         <div className="pointer-events-none relative z-10 mx-auto max-w-2xl px-5 text-center sm:px-10">
           <Reveal>
             <p className="text-[9px] font-medium uppercase tracking-[0.45em] text-white/40">
-              The Brand Philosophy
+              GoodCatch Philosophy
             </p>
             <p className="mt-8 font-display text-2xl font-medium leading-relaxed text-white sm:text-[1.75rem]">
               &ldquo;Luxury is not about more.

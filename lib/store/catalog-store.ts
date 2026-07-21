@@ -57,6 +57,15 @@ function slugId(name: string): string {
 
 let initialization: Promise<void> | null = null;
 let realtimeStarted = false;
+let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleRefresh(refresh: () => Promise<void>) {
+  if (refreshTimer) clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => {
+    refreshTimer = null;
+    void refresh();
+  }, 400);
+}
 
 export const useCatalogStore = create<CatalogState>((set, get) => ({
   products: [],
@@ -97,17 +106,17 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
           .on(
             "postgres_changes",
             { event: "*", schema: "public", table: "products" },
-            () => void get().refresh()
+            () => scheduleRefresh(() => get().refresh())
           )
           .on(
             "postgres_changes",
             { event: "*", schema: "public", table: "brands" },
-            () => void get().refresh()
+            () => scheduleRefresh(() => get().refresh())
           )
           .on(
             "postgres_changes",
             { event: "*", schema: "public", table: "categories" },
-            () => void get().refresh()
+            () => scheduleRefresh(() => get().refresh())
           )
           .subscribe();
       })

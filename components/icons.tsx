@@ -31,6 +31,13 @@ export const FilterIcon = (p: IconProps) => (
   </svg>
 );
 
+/** Asc/desc arrows — sort control. */
+export const SortIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="m3 8 4-4 4 4M7 4v16M21 16l-4 4-4-4M17 20V4" />
+  </svg>
+);
+
 export const SearchIcon = (p: IconProps) => (
   <svg {...base} {...p}>
     <circle cx="11" cy="11" r="7" />

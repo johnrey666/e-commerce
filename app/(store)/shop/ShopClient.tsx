@@ -12,6 +12,7 @@ import {
   CloseIcon,
   FilterIcon,
   SearchIcon,
+  SortIcon,
 } from "@/components/icons";
 import { ProductCard } from "@/components/ProductCard";
 import { effectivePrice } from "@/lib/format";
@@ -170,7 +171,7 @@ export function ShopClient() {
       ? "New Arrivals"
       : section === "on-sale"
         ? "On Sale"
-        : "The Collection";
+        : "All Collection";
 
   const filterPanel = (
     <div className="space-y-9">
@@ -343,30 +344,8 @@ export function ShopClient() {
 
   return (
     <div className="mx-auto max-w-[90rem] px-5 py-14 sm:px-10 sm:py-20">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="border-b border-ink/10 pb-10 text-center"
-      >
-        <div className="rule-diamond mx-auto max-w-sm">
-          <p className="eyebrow">Good Catch</p>
-        </div>
-        <h1 className="section-title mt-5">{heading}</h1>
-        <p className="mt-3 text-[11px] uppercase tracking-[0.25em] text-ink/40">
-          {ready
-            ? `${filtered.length} of ${products.length} pieces`
-            : "Loading…"}
-        </p>
-        {section && (
-          <Link href="/shop" className="btn-secondary mt-6 !px-6 !py-3">
-            Show All Collection
-          </Link>
-        )}
-      </motion.div>
-
       {/* Toolbar — on mobile, search lives in the bottom bar's search sheet */}
-      <div className="mt-8 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative hidden min-w-0 flex-1 sm:block sm:max-w-sm">
           <SearchIcon
             width={16}
@@ -386,95 +365,104 @@ export function ShopClient() {
           />
         </div>
 
-        <div className="relative min-w-0 flex-1 sm:flex-none">
-          <button
-            type="button"
-            onClick={() => setSortOpen((v) => !v)}
-            aria-haspopup="listbox"
-            aria-expanded={sortOpen}
-            aria-label="Sort products"
-            className="flex h-[46px] w-full items-center justify-between gap-3 border border-ink/15 bg-surface px-4 text-[13px] text-ink transition-colors duration-300 hover:border-ink sm:w-44"
-          >
-            <span className="flex items-center gap-2">
-              {SORT_OPTIONS.find((o) => o.value === sort)?.label}
-              <SortDirIcon
-                dir={SORT_OPTIONS.find((o) => o.value === sort)?.dir}
-              />
-            </span>
-            <ChevronDownIcon
-              width={14}
-              height={14}
-              strokeWidth={1.5}
-              className={`text-ink/45 transition-transform duration-300 ${sortOpen ? "rotate-180" : ""}`}
-            />
-          </button>
-          <AnimatePresence>
-            {sortOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-30"
-                  onClick={() => setSortOpen(false)}
-                  aria-hidden
-                />
-                <motion.ul
-                  role="listbox"
-                  aria-label="Sort options"
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.18 }}
-                  className="absolute left-0 right-0 z-40 mt-1.5 border border-ink/15 bg-paper shadow-[0_16px_40px_-16px_rgba(0,0,0,0.25)] sm:left-auto sm:w-44"
-                >
-                  {SORT_OPTIONS.map((o) => {
-                    const active = o.value === sort;
-                    return (
-                      <li key={o.value}>
-                        <button
-                          type="button"
-                          role="option"
-                          aria-selected={active}
-                          onClick={() => {
-                            setSort(o.value);
-                            setSortOpen(false);
-                          }}
-                          className={`flex w-full items-center justify-between px-4 py-3 text-[13px] transition-colors ${
-                            active
-                              ? "bg-surface font-medium text-ink"
-                              : "text-ink/65 hover:bg-surface hover:text-ink"
-                          }`}
-                        >
-                          <span className="flex items-center gap-2">
-                            {o.label}
-                            <SortDirIcon dir={o.dir} />
-                          </span>
-                          {active && (
-                            <CheckIcon width={13} height={13} strokeWidth={1.75} />
-                          )}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </motion.ul>
-              </>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <button
-          onClick={() => setFiltersOpen(true)}
-          aria-label={`Filters${activeFilterCount > 0 ? `, ${activeFilterCount} active` : ""}`}
-          className="relative grid size-[46px] shrink-0 place-items-center border border-ink/15 bg-surface text-ink transition-colors duration-300 hover:border-ink lg:hidden"
-        >
-          <FilterIcon width={17} height={17} strokeWidth={1.5} />
-          {activeFilterCount > 0 && (
-            <span className="absolute -right-1.5 -top-1.5 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-[9px] font-semibold text-white">
-              {activeFilterCount}
-            </span>
+        <div className="ml-auto flex shrink-0 items-center gap-3">
+          {section && (
+            <Link
+              href="/shop"
+              className="btn-secondary !h-[46px] !px-4 !py-0 whitespace-nowrap"
+            >
+              Show All Collection
+            </Link>
           )}
-        </button>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setSortOpen((v) => !v)}
+              aria-haspopup="listbox"
+              aria-expanded={sortOpen}
+              aria-label={`Sort products: ${SORT_OPTIONS.find((o) => o.value === sort)?.label ?? "Newest"}`}
+              className="relative grid size-[46px] place-items-center border border-ink/15 bg-surface text-ink transition-colors duration-300 hover:border-ink"
+            >
+              <SortIcon width={17} height={17} strokeWidth={1.5} />
+              {sort !== "newest" && (
+                <span className="absolute -right-1.5 -top-1.5 size-2 rounded-full bg-accent" />
+              )}
+            </button>
+            <AnimatePresence>
+              {sortOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-30"
+                    onClick={() => setSortOpen(false)}
+                    aria-hidden
+                  />
+                  <motion.ul
+                    role="listbox"
+                    aria-label="Sort options"
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18 }}
+                    className="absolute right-0 z-40 mt-1.5 w-44 border border-ink/15 bg-paper shadow-[0_16px_40px_-16px_rgba(0,0,0,0.25)]"
+                  >
+                    {SORT_OPTIONS.map((o) => {
+                      const active = o.value === sort;
+                      return (
+                        <li key={o.value}>
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={active}
+                            onClick={() => {
+                              setSort(o.value);
+                              setSortOpen(false);
+                            }}
+                            className={`flex w-full items-center justify-between px-4 py-3 text-[13px] transition-colors ${
+                              active
+                                ? "bg-surface font-medium text-ink"
+                                : "text-ink/65 hover:bg-surface hover:text-ink"
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              {o.label}
+                              <SortDirIcon dir={o.dir} />
+                            </span>
+                            {active && (
+                              <CheckIcon width={13} height={13} strokeWidth={1.75} />
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </motion.ul>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <button
+            onClick={() => setFiltersOpen(true)}
+            aria-label={`Filters${activeFilterCount > 0 ? `, ${activeFilterCount} active` : ""}`}
+            className="relative grid size-[46px] shrink-0 place-items-center border border-ink/15 bg-surface text-ink transition-colors duration-300 hover:border-ink lg:hidden"
+          >
+            <FilterIcon width={17} height={17} strokeWidth={1.5} />
+            {activeFilterCount > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-[9px] font-semibold text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
-      <div className="mt-12 grid gap-12 lg:grid-cols-[230px_1fr]">
+      <div className="rule-diamond mx-auto mt-8 max-w-sm">
+        <h1 className="text-[11px] font-medium uppercase tracking-[0.35em] text-ink/55">
+          {heading}
+        </h1>
+      </div>
+
+      <div className="mt-8 grid gap-12 lg:grid-cols-[230px_1fr]">
         {/* Desktop sidebar */}
         <aside className="hidden lg:block" aria-label="Product filters">
           <div className="sticky top-32 border-r border-ink/8 pr-8">

@@ -9,7 +9,7 @@ const HEIGHT = {
   md: 30,
   lg: 40,
   xl: 56,
-  header: 32,
+  header: 40,
 } as const;
 
 export function Logo({

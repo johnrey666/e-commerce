@@ -35,6 +35,10 @@ export interface LandingContent {
   brandImages: string[];
   /** Headline above the brand logos strip. */
   brandsTitle: string;
+  /** Campaign lookbook model photo URLs (0–5). */
+  lookbookImages: string[];
+  /** Headline for the lookbook section. */
+  lookbookTitle: string;
   /** Optional storefront image keyed by subcategory ID. */
   categoryImages: Record<string, string>;
   storeInfo: StoreInfoContent;
@@ -82,6 +86,8 @@ export interface CartItem {
   image: string;
   size?: string;
   quantity: number;
+  /** Available stock when added — cart qty cannot exceed this. */
+  stock?: number;
 }
 
 export type OrderStatus = "Pending" | "Out for Delivery" | "Delivered";

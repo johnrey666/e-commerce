@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { discountPercent, effectivePrice, formatPrice } from "@/lib/format";
-import { useCartStore } from "@/lib/store/cart-store";
+import { cartRoomForProduct, useCartStore } from "@/lib/store/cart-store";
 import type { Product } from "@/lib/types";
 import { PlusIcon } from "./icons";
 import { ProductImage } from "./ProductImage";
@@ -19,18 +19,23 @@ export function ProductCard({
 }) {
   const addItem = useCartStore((s) => s.addItem);
   const openDrawer = useCartStore((s) => s.openDrawer);
+  const cartItems = useCartStore((s) => s.items);
   const percent = discountPercent(product);
   const soldOut = product.stock <= 0;
+  const atCartMax =
+    !soldOut && cartRoomForProduct(cartItems, product.id, product.stock) <= 0;
 
   const quickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (soldOut || atCartMax) return;
     addItem({
       productId: product.id,
       name: product.name,
       unitPrice: effectivePrice(product),
       image: product.images[0] ?? "",
       size: product.sizes[0],
+      stock: product.stock,
     });
     openDrawer();
   };
@@ -66,7 +71,7 @@ export function ProductCard({
           )}
         </div>
 
-        {!soldOut && (
+        {!soldOut && !atCartMax && (
           <>
             {/* Desktop — slide-up bar on hover */}
             <button

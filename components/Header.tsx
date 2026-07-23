@@ -10,6 +10,7 @@ import { selectCartCount, useCartStore } from "@/lib/store/cart-store";
 import { useProfileStore } from "@/lib/store/profile-store";
 import { CartIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from "./icons";
 import { Logo } from "./Logo";
+import { HeaderSnackbar } from "./HeaderSnackbar";
 import { ProfileDrawer } from "./ProfileDrawer";
 
 const NAV = [
@@ -68,6 +69,7 @@ export function Header() {
 
   return (
     <>
+      <HeaderSnackbar />
       <header className="sticky top-0 z-50 border-b border-ink/10 bg-paper/90 backdrop-blur-xl">
         <div className="relative mx-auto flex h-[4.25rem] max-w-[90rem] items-center justify-between px-5 sm:h-[5.25rem] sm:px-10">
           {/* Desktop nav — left */}

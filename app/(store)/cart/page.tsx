@@ -6,7 +6,11 @@ import { MinusIcon, PlusIcon, TrashIcon } from "@/components/icons";
 import { ProductImage } from "@/components/ProductImage";
 import { formatPrice } from "@/lib/format";
 import { useMounted } from "@/lib/hooks";
-import { selectCartTotal, useCartStore } from "@/lib/store/cart-store";
+import {
+  cartRoomForProduct,
+  selectCartTotal,
+  useCartStore,
+} from "@/lib/store/cart-store";
 
 export default function CartPage() {
   const mounted = useMounted();
@@ -93,11 +97,19 @@ export default function CartPage() {
                         {item.quantity}
                       </span>
                       <button
+                        type="button"
+                        disabled={
+                          cartRoomForProduct(
+                            items,
+                            item.productId,
+                            item.stock ?? item.quantity
+                          ) <= 0
+                        }
                         onClick={() =>
                           setQuantity(item.productId, item.size, item.quantity + 1)
                         }
                         aria-label="Increase quantity"
-                        className="grid size-7 place-items-center text-ink/60 transition-colors hover:text-ink"
+                        className="grid size-7 place-items-center text-ink/60 transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
                       >
                         <PlusIcon width={13} height={13} strokeWidth={1.5} />
                       </button>
@@ -121,7 +133,7 @@ export default function CartPage() {
               </span>
             </div>
             <p className="mt-3 text-[10px] uppercase tracking-[0.2em] text-ink/35">
-              Complimentary delivery · GCash at checkout
+              Shipping calculated at checkout · GCash / PayMongo
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link href="/checkout" className="btn-primary flex-1 text-center">

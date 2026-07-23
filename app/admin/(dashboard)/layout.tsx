@@ -4,12 +4,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { HeaderSnackbar } from "@/components/HeaderSnackbar";
 import { ProfileDrawer } from "@/components/ProfileDrawer";
 import { CloseIcon, MenuIcon, UserIcon } from "@/components/icons";
 import { Logo } from "@/components/Logo";
 import { useMounted } from "@/lib/hooks";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useProfileStore } from "@/lib/store/profile-store";
+import { useToastStore } from "@/lib/store/toast-store";
 
 const ADMIN_LINKS = [
   { href: "/admin", label: "Dashboard" },
@@ -38,6 +40,7 @@ export default function AdminLayout({
   const initialize = useAuthStore((s) => s.initialize);
   const logout = useAuthStore((s) => s.logout);
   const loadProfile = useProfileStore((s) => s.loadProfile);
+  const showToast = useToastStore((s) => s.show);
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -71,6 +74,7 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,var(--color-cream)_0%,var(--color-paper)_28%)]">
+      <HeaderSnackbar />
       <header className="sticky top-0 z-40 border-b border-ink/10 bg-paper/90 backdrop-blur-xl">
         <div className="relative mx-auto flex h-[4.25rem] max-w-[90rem] items-center justify-between px-5 sm:h-[5rem] sm:px-10">
           {/* Left — atelier label on desktop */}
@@ -106,6 +110,7 @@ export default function AdminLayout({
             <button
               onClick={async () => {
                 await logout();
+                showToast("Logged out successfully");
                 router.push("/login");
               }}
               className="hidden border border-ink/12 px-5 py-2 text-[10px] font-medium uppercase tracking-[0.24em] text-ink/55 transition-all duration-300 hover:border-ink hover:text-ink md:inline-block"
@@ -204,6 +209,7 @@ export default function AdminLayout({
                     onClick={async () => {
                       setMenuOpen(false);
                       await logout();
+                      showToast("Logged out successfully");
                       router.push("/login");
                     }}
                     className="border border-ink/15 px-3 py-3 text-[9px] font-medium uppercase tracking-[0.2em] text-ink/65"

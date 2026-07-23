@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ProductImage } from "@/components/ProductImage";
+import { sortCategoriesWithOthersLast } from "@/lib/categories";
 import { useCatalog } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase/client";
 import { useCatalogStore } from "@/lib/store/catalog-store";
@@ -256,9 +257,9 @@ export function ProductForm({ product }: { product?: Product }) {
                         />
                         General
                       </label>
-                      {categories
-                        .filter((c) => c.parentId === parent.id)
-                        .map((category) => (
+                      {sortCategoriesWithOthersLast(
+                        categories.filter((c) => c.parentId === parent.id)
+                      ).map((category) => (
                           <label
                             key={category.id}
                             className="flex cursor-pointer items-center gap-2.5 text-[13px] text-ink/70"

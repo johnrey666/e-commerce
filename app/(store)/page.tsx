@@ -6,11 +6,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { AiAssistant } from "@/components/AiAssistant";
 import { HeroGallery } from "@/components/home/HeroGallery";
+import { Lookbook } from "@/components/home/Lookbook";
 import { ProductCarousel } from "@/components/home/ProductCarousel";
 import { ReviewsPreview } from "@/components/home/ReviewsPreview";
 import { StoreInfo } from "@/components/home/StoreInfo";
 import { fadeUp, Reveal } from "@/components/Reveal";
 import { useCatalog, useLandingContent } from "@/lib/hooks";
+import { isOthersCategory } from "@/lib/categories";
 import { scatteredSample } from "@/lib/sample-images";
 import { curatedSections } from "@/lib/seed-data";
 import type { CuratedSection, Product } from "@/lib/types";
@@ -37,7 +39,10 @@ export default function HomePage() {
   const { content } = useLandingContent();
   const subcategoryGroups = Array.from(
     categories
-      .filter((category) => category.parentId !== null)
+      .filter(
+        (category) =>
+          category.parentId !== null && !isOthersCategory(category)
+      )
       .reduce((groups, category) => {
         const key = category.name.trim().toLowerCase();
         const existing = groups.get(key);
@@ -128,6 +133,12 @@ export default function HomePage() {
           title={content.brandsTitle}
         />
       </section>
+
+      {/* ——— Campaign lookbook ——— */}
+      <Lookbook
+        images={content.lookbookImages}
+        title={content.lookbookTitle}
+      />
 
       {/* ——— New arrivals, then on sale ——— */}
       {ready &&

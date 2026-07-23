@@ -19,6 +19,10 @@ import type {
 } from "@/lib/types";
 
 const STATUSES: OrderStatus[] = ["Pending", "Out for Delivery", "Delivered"];
+const ACTIVE_STATUSES: OrderStatus[] = ["Pending", "Out for Delivery"];
+const LIST_PAGE = 25;
+
+type ListFilter = "active" | "delivered";
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
   Pending: "bg-brand-soft text-brand",
@@ -38,14 +42,13 @@ export default function AdminOrdersPage() {
   const loading = useOrderStore((s) => s.loading);
   const fetchOrders = useOrderStore((s) => s.fetchOrders);
   const updateStatus = useOrderStore((s) => s.updateStatus);
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | "All">("All");
+  const [listFilter, setListFilter] = useState<ListFilter>("active");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [chatOrder, setChatOrder] = useState<Order | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncNote, setSyncNote] = useState<string | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [listPage, setListPage] = useState(1);
-  const LIST_PAGE = 25;
 
   useEffect(() => {
     let cancelled = false;
@@ -99,9 +102,9 @@ export default function AdminOrdersPage() {
     reviews.find((r) => r.orderId === orderId && r.productId === productId);
 
   const filtered =
-    statusFilter === "All"
-      ? orders
-      : orders.filter((o) => o.status === statusFilter);
+    listFilter === "delivered"
+      ? orders.filter((o) => o.status === "Delivered")
+      : orders.filter((o) => ACTIVE_STATUSES.includes(o.status));
 
   const listPages = Math.max(1, Math.ceil(filtered.length / LIST_PAGE));
   const pageSafe = Math.min(listPage, listPages);
@@ -109,6 +112,8 @@ export default function AdminOrdersPage() {
     (pageSafe - 1) * LIST_PAGE,
     pageSafe * LIST_PAGE
   );
+  const deliveredCount = orders.filter((o) => o.status === "Delivered").length;
+  const activeCount = orders.length - deliveredCount;
 
   return (
     <div>
@@ -156,27 +161,45 @@ export default function AdminOrdersPage() {
       </div>
 
       <div className="mt-8 flex flex-wrap gap-2">
-        {(["All", ...STATUSES] as const).map((s) => (
-          <button
-            key={s}
-            onClick={() => {
-              setStatusFilter(s);
-              setListPage(1);
-            }}
-            className={`px-4 py-2 text-[9px] font-medium uppercase tracking-[0.22em] transition-all duration-300 sm:px-5 sm:py-2.5 sm:text-[10px] sm:tracking-[0.24em] ${
-              statusFilter === s
-                ? "bg-ink text-white"
-                : "border border-ink/15 text-ink/50 hover:border-ink hover:text-ink"
-            }`}
-          >
-            {s}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => {
+            setListFilter("active");
+            setListPage(1);
+          }}
+          className={`px-4 py-2 text-[9px] font-medium uppercase tracking-[0.22em] transition-all duration-300 sm:px-5 sm:py-2.5 sm:text-[10px] sm:tracking-[0.24em] ${
+            listFilter === "active"
+              ? "bg-ink text-white"
+              : "border border-ink/15 text-ink/50 hover:border-ink hover:text-ink"
+          }`}
+        >
+          Active
+          {mounted ? (
+            <span className="ml-2 opacity-60">{activeCount}</span>
+          ) : null}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setListFilter("delivered");
+            setListPage(1);
+          }}
+          className={`px-4 py-2 text-[9px] font-medium uppercase tracking-[0.22em] transition-all duration-300 sm:px-5 sm:py-2.5 sm:text-[10px] sm:tracking-[0.24em] ${
+            listFilter === "delivered"
+              ? "bg-ink text-white"
+              : "border border-ink/15 text-ink/50 hover:border-ink hover:text-ink"
+          }`}
+        >
+          Delivered
+          {mounted ? (
+            <span className="ml-2 opacity-60">{deliveredCount}</span>
+          ) : null}
+        </button>
       </div>
 
       <p className="mt-4 text-[12px] text-ink/40">
-        Paid orders only. Use Sync Payments if a successful PayMongo payment is
-        missing.
+        Paid orders only. Active shows Pending and Out for Delivery. Use Sync
+        Payments if a successful PayMongo payment is missing.
       </p>
       {syncNote && (
         <p className="mt-2 text-[12px] text-ink/55">{syncNote}</p>
@@ -186,11 +209,18 @@ export default function AdminOrdersPage() {
         <div className="mt-10 border border-ink/10 bg-surface px-6 py-20 text-center">
           <p className="eyebrow">Quiet For Now</p>
           <p className="mt-4 font-display text-2xl font-medium text-ink">
-            No paid orders yet
+            {orders.length === 0
+              ? "No paid orders yet"
+              : listFilter === "delivered"
+                ? "No delivered orders"
+                : "No active orders"}
           </p>
           <p className="mx-auto mt-3 max-w-sm text-[13px] leading-relaxed text-ink/45">
-            After a successful payment, tap Sync Payments if it doesn’t show
-            automatically.
+            {orders.length === 0
+              ? "After a successful payment, tap Sync Payments if it doesn’t show automatically."
+              : listFilter === "delivered"
+                ? "Completed deliveries will appear here."
+                : "Pending and out-for-delivery orders will show here."}
           </p>
         </div>
       ) : (

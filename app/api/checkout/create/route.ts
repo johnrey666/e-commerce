@@ -4,12 +4,12 @@ import {
   createCheckoutSession,
   toCentavos,
 } from "@/lib/paymongo";
+import { calculateShippingFee } from "@/lib/shipping";
 import type { CartItem, CheckoutDetails } from "@/lib/types";
 
 type Body = {
   orderId: string;
   items: CartItem[];
-  total: number;
   customer: CheckoutDetails;
 };
 
@@ -44,14 +44,40 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as Body;
-    const { orderId, items, total, customer } = body;
+    const { orderId, items, customer } = body;
 
-    if (!orderId || !items?.length || !customer || !(total > 0)) {
+    if (!orderId || !items?.length || !customer) {
       return NextResponse.json(
         { error: "Invalid checkout payload." },
         { status: 400 }
       );
     }
+
+    if (customer.country === "Philippines" && !customer.region?.trim()) {
+      return NextResponse.json(
+        { error: "Region is required to calculate shipping." },
+        { status: 400 }
+      );
+    }
+
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.unitPrice * item.quantity,
+      0
+    );
+
+    if (!(subtotal > 0)) {
+      return NextResponse.json(
+        { error: "Invalid checkout payload." },
+        { status: 400 }
+      );
+    }
+
+    const shipping = calculateShippingFee({
+      country: customer.country,
+      region: customer.region || "",
+      carrier: customer.shippingCarrier,
+    });
+    const total = subtotal + shipping.fee;
 
     const { error: orderError } = await supabase.from("orders").insert({
       id: orderId,
@@ -97,12 +123,20 @@ export async function POST(request: Request) {
     }
 
     const origin = new URL(request.url).origin;
-    const lineItems = items.map((item) => ({
-      name: item.size ? `${item.name} (${item.size})` : item.name,
-      amount: toCentavos(item.unitPrice),
-      currency: "PHP" as const,
-      quantity: item.quantity,
-    }));
+    const lineItems = [
+      ...items.map((item) => ({
+        name: item.size ? `${item.name} (${item.size})` : item.name,
+        amount: toCentavos(item.unitPrice),
+        currency: "PHP" as const,
+        quantity: item.quantity,
+      })),
+      {
+        name: `Shipping · ${customer.shippingCarrier} (${shipping.zoneLabel})`,
+        amount: toCentavos(shipping.fee),
+        currency: "PHP" as const,
+        quantity: 1,
+      },
+    ];
 
     const session = await createCheckoutSession({
       lineItems,
@@ -111,7 +145,12 @@ export async function POST(request: Request) {
       successUrl: `${origin}/order-confirmation?order=${encodeURIComponent(orderId)}`,
       cancelUrl: `${origin}/checkout?cancelled=1&order=${encodeURIComponent(orderId)}`,
       customerEmail: customer.email,
-      metadata: { order_id: orderId, user_id: user.id },
+      metadata: {
+        order_id: orderId,
+        user_id: user.id,
+        shipping_fee: String(shipping.fee),
+        shipping_zone: shipping.zone,
+      },
     });
 
     await supabase
@@ -123,6 +162,8 @@ export async function POST(request: Request) {
       checkoutUrl: session.checkoutUrl,
       checkoutId: session.id,
       orderId,
+      shippingFee: shipping.fee,
+      total,
     });
   } catch (err) {
     console.error("[checkout/create]", err);

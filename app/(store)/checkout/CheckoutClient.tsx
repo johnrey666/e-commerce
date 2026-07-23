@@ -3,18 +3,28 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PinIcon,
+} from "@/components/icons";
 import { MapPicker } from "@/components/MapPicker";
 import { ProductImage } from "@/components/ProductImage";
 import { formatPrice } from "@/lib/format";
 import { useMounted } from "@/lib/hooks";
 import { COUNTRIES, PH_REGIONS, SHIPPING_CARRIERS } from "@/lib/locations";
 import { generateOrderId } from "@/lib/orders";
+import {
+  calculateShippingFee,
+  SELLER_ORIGIN_REGION,
+  shippingFeesForAllCarriers,
+} from "@/lib/shipping";
 import { selectCartTotal, useCartStore } from "@/lib/store/cart-store";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useProfileStore } from "@/lib/store/profile-store";
-import type { CheckoutDetails } from "@/lib/types";
+import type { CheckoutDetails, ShippingCarrier } from "@/lib/types";
 
 const inputClass = "input-field";
 const labelClass =
@@ -57,6 +67,7 @@ export default function CheckoutClient() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shippingHydrated, setShippingHydrated] = useState(false);
+  const [showMapPin, setShowMapPin] = useState(false);
   const cancelled = searchParams.get("cancelled") === "1";
 
   useEffect(() => {
@@ -94,6 +105,26 @@ export default function CheckoutClient() {
   const set = (field: keyof CheckoutDetails) => (value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
 
+  const carrierQuotes = useMemo(
+    () => shippingFeesForAllCarriers(form.country, form.region || ""),
+    [form.country, form.region]
+  );
+
+  const shippingQuote = useMemo(
+    () =>
+      calculateShippingFee({
+        country: form.country,
+        region: form.region || "",
+        carrier: form.shippingCarrier,
+      }),
+    [form.country, form.region, form.shippingCarrier]
+  );
+
+  const shippingFee = form.region || form.country !== "Philippines"
+    ? shippingQuote.fee
+    : 0;
+  const orderTotal = total + shippingFee;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -106,6 +137,11 @@ export default function CheckoutClient() {
       return;
     }
 
+    if (form.country === "Philippines" && !form.region.trim()) {
+      setError("Please select your region so we can calculate shipping.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const orderId = generateOrderId();
@@ -115,7 +151,6 @@ export default function CheckoutClient() {
         body: JSON.stringify({
           orderId,
           items,
-          total,
           customer: form,
         }),
       });
@@ -132,6 +167,7 @@ export default function CheckoutClient() {
 
       clearCart();
       window.location.href = data.checkoutUrl;
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed.");
       setSubmitting(false);
@@ -227,38 +263,41 @@ export default function CheckoutClient() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="border border-ink/10 bg-surface p-8"
+            className="border border-ink/10 bg-surface p-5 sm:p-8"
           >
             <h2 className="mb-7 text-[11px] font-medium uppercase tracking-[0.35em] text-ink">
               Delivery Details
             </h2>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <label htmlFor="firstName" className={labelClass}>
-                  First name *
-                </label>
-                <input
-                  id="firstName"
-                  required
-                  autoComplete="given-name"
-                  value={form.firstName}
-                  onChange={(e) => set("firstName")(e.target.value)}
-                  className={inputClass}
-                />
+            <div className="space-y-4 sm:space-y-5">
+              <div className="grid grid-cols-2 gap-3 sm:gap-5">
+                <div className="min-w-0">
+                  <label htmlFor="firstName" className={labelClass}>
+                    First name *
+                  </label>
+                  <input
+                    id="firstName"
+                    required
+                    autoComplete="given-name"
+                    value={form.firstName}
+                    onChange={(e) => set("firstName")(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label htmlFor="lastName" className={labelClass}>
+                    Last name *
+                  </label>
+                  <input
+                    id="lastName"
+                    required
+                    autoComplete="family-name"
+                    value={form.lastName}
+                    onChange={(e) => set("lastName")(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
               </div>
-              <div>
-                <label htmlFor="lastName" className={labelClass}>
-                  Last name *
-                </label>
-                <input
-                  id="lastName"
-                  required
-                  autoComplete="family-name"
-                  value={form.lastName}
-                  onChange={(e) => set("lastName")(e.target.value)}
-                  className={inputClass}
-                />
-              </div>
+
               <div>
                 <label htmlFor="contactNumber" className={labelClass}>
                   Contact number *
@@ -274,6 +313,7 @@ export default function CheckoutClient() {
                   className={inputClass}
                 />
               </div>
+
               <div>
                 <label htmlFor="email" className={labelClass}>
                   Email *
@@ -288,121 +328,190 @@ export default function CheckoutClient() {
                   className={inputClass}
                 />
               </div>
-              <div>
-                <label htmlFor="country" className={labelClass}>
-                  Country *
-                </label>
-                <select
-                  id="country"
-                  required
-                  value={form.country}
-                  onChange={(e) => set("country")(e.target.value)}
-                  className={inputClass}
-                >
-                  {COUNTRIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="region" className={labelClass}>
-                  Region *
-                </label>
-                {form.country === "Philippines" ? (
+
+              <div className="grid grid-cols-2 gap-3 sm:gap-5">
+                <div className="min-w-0">
+                  <label htmlFor="country" className={labelClass}>
+                    Country *
+                  </label>
                   <select
-                    id="region"
+                    id="country"
                     required
-                    value={form.region}
-                    onChange={(e) => set("region")(e.target.value)}
+                    value={form.country}
+                    onChange={(e) => set("country")(e.target.value)}
                     className={inputClass}
                   >
-                    <option value="">Select region</option>
-                    {PH_REGIONS.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
+                    {COUNTRIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
                       </option>
                     ))}
                   </select>
-                ) : (
+                </div>
+                <div className="min-w-0">
+                  <label htmlFor="region" className={labelClass}>
+                    Region *
+                  </label>
+                  {form.country === "Philippines" ? (
+                    <select
+                      id="region"
+                      required
+                      value={form.region}
+                      onChange={(e) => set("region")(e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="">Select region</option>
+                      {PH_REGIONS.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      id="region"
+                      required
+                      value={form.region}
+                      onChange={(e) => set("region")(e.target.value)}
+                      className={inputClass}
+                      placeholder="State / Province / Region"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:gap-5">
+                <div className="min-w-0">
+                  <label htmlFor="postalCode" className={labelClass}>
+                    Postal code *
+                  </label>
                   <input
-                    id="region"
+                    id="postalCode"
                     required
-                    value={form.region}
-                    onChange={(e) => set("region")(e.target.value)}
+                    autoComplete="postal-code"
+                    value={form.postalCode}
+                    onChange={(e) => set("postalCode")(e.target.value)}
                     className={inputClass}
-                    placeholder="State / Province / Region"
                   />
-                )}
+                </div>
+                <div className="min-w-0">
+                  <label htmlFor="street" className={labelClass}>
+                    Street *
+                  </label>
+                  <input
+                    id="street"
+                    required
+                    autoComplete="street-address"
+                    placeholder="Street, building, unit…"
+                    value={form.street}
+                    onChange={(e) => set("street")(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
               </div>
-              <div>
-                <label htmlFor="postalCode" className={labelClass}>
-                  Postal code *
-                </label>
-                <input
-                  id="postalCode"
-                  required
-                  autoComplete="postal-code"
-                  value={form.postalCode}
-                  onChange={(e) => set("postalCode")(e.target.value)}
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label htmlFor="barangay" className={labelClass}>
-                  Barangay *
-                </label>
-                <input
-                  id="barangay"
-                  required
-                  value={form.barangay}
-                  onChange={(e) => set("barangay")(e.target.value)}
-                  className={inputClass}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label htmlFor="city" className={labelClass}>
-                  City *
-                </label>
-                <input
-                  id="city"
-                  required
-                  autoComplete="address-level2"
-                  value={form.city}
-                  onChange={(e) => set("city")(e.target.value)}
-                  className={inputClass}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label htmlFor="street" className={labelClass}>
-                  Street *
-                </label>
-                <input
-                  id="street"
-                  required
-                  autoComplete="street-address"
-                  placeholder="Street, building, unit…"
-                  value={form.street}
-                  onChange={(e) => set("street")(e.target.value)}
-                  className={inputClass}
-                />
+
+              <div className="grid grid-cols-2 gap-3 sm:gap-5">
+                <div className="min-w-0">
+                  <label htmlFor="barangay" className={labelClass}>
+                    Barangay *
+                  </label>
+                  <input
+                    id="barangay"
+                    required
+                    value={form.barangay}
+                    onChange={(e) => set("barangay")(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label htmlFor="city" className={labelClass}>
+                    City *
+                  </label>
+                  <input
+                    id="city"
+                    required
+                    autoComplete="address-level2"
+                    value={form.city}
+                    onChange={(e) => set("city")(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="mt-5">
-              <span className={labelClass}>
-                Pin location{" "}
-                <span className="normal-case text-ink/35">(optional)</span>
-              </span>
-              <MapPicker
-                onPin={set("pinnedLocation")}
-                initialPin={form.pinnedLocation}
-              />
-              {form.pinnedLocation && (
-                <p className="mt-2 text-[11px] font-medium tracking-[0.05em] text-accent">
-                  Pinned: {form.pinnedLocation}
-                </p>
+            <div className="mt-6 border border-ink/10">
+              <div className="flex items-stretch">
+                <button
+                  type="button"
+                  aria-expanded={showMapPin}
+                  onClick={() => setShowMapPin((open) => !open)}
+                  className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-cream/60"
+                >
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <PinIcon
+                      width={14}
+                      height={14}
+                      strokeWidth={1.5}
+                      className="shrink-0 text-ink/40"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-[10px] font-medium uppercase tracking-[0.25em] text-ink/70">
+                        Pin location{" "}
+                        <span className="normal-case tracking-normal text-ink/35">
+                          (optional)
+                        </span>
+                      </span>
+                      <span className="mt-0.5 block truncate text-[11px] text-ink/40">
+                        {form.pinnedLocation
+                          ? `Pinned: ${form.pinnedLocation}`
+                          : "Add a map pin to help with delivery"}
+                      </span>
+                    </span>
+                  </span>
+                  <ChevronDownIcon
+                    width={14}
+                    height={14}
+                    strokeWidth={1.5}
+                    className={`shrink-0 text-ink/35 transition-transform duration-300 ${
+                      showMapPin ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {form.pinnedLocation && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm((f) => ({ ...f, pinnedLocation: undefined }))
+                    }
+                    className="shrink-0 border-l border-ink/10 px-3 text-[10px] font-medium uppercase tracking-[0.18em] text-ink/45 transition-colors hover:bg-cream/60 hover:text-ink sm:px-4"
+                  >
+                    Unpin
+                  </button>
+                )}
+              </div>
+              {showMapPin && (
+                <div className="border-t border-ink/10 px-4 py-4">
+                  <MapPicker
+                    onPin={set("pinnedLocation")}
+                    initialPin={form.pinnedLocation}
+                  />
+                  {form.pinnedLocation && (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[11px] font-medium tracking-[0.05em] text-accent">
+                        Pinned: {form.pinnedLocation}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm((f) => ({ ...f, pinnedLocation: undefined }))
+                        }
+                        className="text-[10px] font-medium uppercase tracking-[0.2em] text-ink/40 transition-colors hover:text-ink"
+                      >
+                        Unpin
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
@@ -493,33 +602,66 @@ export default function CheckoutClient() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.12 }}
-            className="border border-ink/10 bg-surface p-8"
+            className="border border-ink/10 bg-surface p-5 sm:p-8"
           >
-            <h2 className="mb-5 text-[11px] font-medium uppercase tracking-[0.35em] text-ink">
+            <h2 className="mb-2 text-[11px] font-medium uppercase tracking-[0.35em] text-ink">
               Shipping Option
             </h2>
-            <label htmlFor="shipping" className={labelClass}>
-              Carrier *
-            </label>
-            <select
-              id="shipping"
-              required
-              value={form.shippingCarrier}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  shippingCarrier:
-                    e.target.value as CheckoutDetails["shippingCarrier"],
-                }))
-              }
-              className={inputClass}
-            >
-              {SHIPPING_CARRIERS.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+            <p className="mb-5 text-[12px] leading-relaxed text-ink/45">
+              Ships from {SELLER_ORIGIN_REGION}. Fees update from your region and
+              carrier — light apparel parcel estimates.
+            </p>
+
+            {!form.region && form.country === "Philippines" ? (
+              <p className="border border-ink/10 bg-cream px-4 py-3 text-[12px] text-ink/55">
+                Select your region above to see carrier rates.
+              </p>
+            ) : (
+              <fieldset className="space-y-3">
+                <legend className="sr-only">Shipping carrier</legend>
+                {SHIPPING_CARRIERS.map((carrier) => {
+                  const quote = carrierQuotes[carrier];
+                  const selected = form.shippingCarrier === carrier;
+                  return (
+                    <label
+                      key={carrier}
+                      className={`flex cursor-pointer items-start gap-3 border px-4 py-3.5 transition-colors ${
+                        selected
+                          ? "border-ink bg-cream"
+                          : "border-ink/10 hover:border-ink/25"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="shippingCarrier"
+                        value={carrier}
+                        checked={selected}
+                        onChange={() =>
+                          setForm((f) => ({
+                            ...f,
+                            shippingCarrier: carrier as ShippingCarrier,
+                          }))
+                        }
+                        className="mt-1 accent-ink"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-baseline justify-between gap-2">
+                          <span className="text-[14px] font-medium text-ink">
+                            {carrier === "JNT" ? "J&T Express" : carrier}
+                          </span>
+                          <span className="font-display text-lg font-medium text-ink">
+                            {formatPrice(quote.fee)}
+                          </span>
+                        </span>
+                        <span className="mt-1 block text-[11px] text-ink/45">
+                          {quote.zoneLabel} · Est. {quote.eta}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </fieldset>
+            )}
           </motion.section>
         </div>
 
@@ -555,17 +697,37 @@ export default function CheckoutClient() {
               </li>
             ))}
           </ul>
-          <div className="mt-5 border-t border-ink/10 pt-5">
-            <div className="flex items-baseline justify-between">
+          <div className="mt-5 space-y-2.5 border-t border-ink/10 pt-5">
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="text-ink/50">Subtotal</span>
+              <span className="font-medium text-ink">
+                {formatPrice(mounted ? total : 0)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="text-ink/50">
+                Shipping
+                {shippingFee > 0
+                  ? ` · ${form.shippingCarrier === "JNT" ? "J&T" : form.shippingCarrier}`
+                  : ""}
+              </span>
+              <span className="font-medium text-ink">
+                {form.country === "Philippines" && !form.region
+                  ? "—"
+                  : formatPrice(shippingFee)}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between border-t border-ink/8 pt-3">
               <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-ink/45">
                 Total
               </span>
               <span className="font-display text-3xl font-medium text-ink">
-                {formatPrice(mounted ? total : 0)}
+                {formatPrice(mounted ? orderTotal : 0)}
               </span>
             </div>
-            <p className="mt-2 text-[10px] uppercase tracking-[0.2em] text-ink/35">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ink/35">
               {form.shippingCarrier} · PayMongo
+              {shippingFee > 0 ? ` · ${shippingQuote.zoneLabel}` : ""}
             </p>
           </div>
 

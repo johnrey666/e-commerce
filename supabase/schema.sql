@@ -131,6 +131,9 @@ begin
   if old.id in ('men', 'women') then
     raise exception 'The % department cannot be deleted.', old.name;
   end if;
+  if old.id in ('men-others', 'women-others') then
+    raise exception 'The Others catch-all category cannot be deleted.';
+  end if;
   return old;
 end;
 $$;
@@ -140,6 +143,24 @@ create trigger protect_root_categories
   before delete on public.categories
   for each row
   execute function public.protect_root_categories();
+
+create or replace function public.protect_others_category_rename()
+returns trigger
+language plpgsql
+as $$
+begin
+  if old.id in ('men-others', 'women-others') and new.name is distinct from old.name then
+    raise exception 'The Others catch-all category cannot be renamed.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_others_category_rename on public.categories;
+create trigger protect_others_category_rename
+  before update of name on public.categories
+  for each row
+  execute function public.protect_others_category_rename();
 
 create table if not exists public.products (
   id uuid primary key default gen_random_uuid(),
@@ -231,6 +252,8 @@ create table if not exists public.site_content (
   hero_video_url text not null default '/sample.mp4',
   brand_images text[] not null default '{}',
   brands_title text not null default 'Sourced from the world''s finest brands',
+  lookbook_images text[] not null default '{}',
+  lookbook_title text not null default 'The look',
   category_images jsonb not null default '{}'::jsonb,
   store_info jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
@@ -241,6 +264,10 @@ alter table public.site_content
     default 'Sourced from the world''s finest brands';
 alter table public.site_content
   add column if not exists store_info jsonb not null default '{}'::jsonb;
+alter table public.site_content
+  add column if not exists lookbook_images text[] not null default '{}';
+alter table public.site_content
+  add column if not exists lookbook_title text not null default 'The look';
 
 insert into public.site_content (id)
 values ('landing')
@@ -397,7 +424,7 @@ create policy "Admins can delete product images"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
--- Public landing-page media. Videos are capped at 100 MB; images and videos
+-- Public landing-page media. Videos are capped at 200 MB; images and videos
 -- are stored under the current admin's folder so replaced files can be removed.
 insert into storage.buckets (
   id,
@@ -410,10 +437,10 @@ values (
   'landing-media',
   'landing-media',
   true,
-  104857600,
+  262144000,
   array[
     'image/jpeg', 'image/png', 'image/webp', 'image/avif',
-    'video/mp4', 'video/webm'
+    'video/mp4', 'video/webm', 'video/quicktime'
   ]
 )
 on conflict (id) do update set
@@ -452,6 +479,5 @@ create policy "Admins can delete landing media"
   to authenticated
   using (
     bucket_id = 'landing-media'
-    and (storage.foldername(name))[1] = auth.uid()::text
     and public.is_admin()
   );

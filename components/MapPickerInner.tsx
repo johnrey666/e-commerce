@@ -1,16 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   MapContainer,
   Marker,
   TileLayer,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-const DEFAULT_CENTER: [number, number] = [14.5995, 120.9842]; // Manila
+/** Default view near Bicol (Legazpi) — seller origin. */
+const DEFAULT_CENTER: [number, number] = [13.1391, 123.7437];
 
 const pinIcon = L.divIcon({
   className: "gc-map-pin",
@@ -39,15 +41,43 @@ function ClickHandler({
   return null;
 }
 
+function FlyToPin({
+  target,
+}: {
+  target: [number, number] | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!target) return;
+    map.flyTo(target, 16, { duration: 1.1 });
+  }, [target, map]);
+
+  return null;
+}
+
 export default function MapPickerInner({
   onPin,
   initialPin,
+  flyTo,
 }: {
   onPin: (location: string) => void;
   initialPin?: string;
+  /** When set (e.g. from geolocation), fly the map and drop a pin. */
+  flyTo?: [number, number] | null;
 }) {
-  const initial = useMemo(() => parsePin(initialPin), [initialPin]);
-  const [position, setPosition] = useState<[number, number] | null>(initial);
+  const [position, setPosition] = useState<[number, number] | null>(() =>
+    parsePin(initialPin)
+  );
+
+  useEffect(() => {
+    setPosition(parsePin(initialPin));
+  }, [initialPin]);
+
+  useEffect(() => {
+    if (!flyTo) return;
+    setPosition(flyTo);
+  }, [flyTo]);
 
   const handlePick = (lat: number, lng: number) => {
     const next: [number, number] = [lat, lng];
@@ -68,6 +98,7 @@ export default function MapPickerInner({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <ClickHandler onPick={handlePick} />
+      <FlyToPin target={flyTo ?? null} />
       {position && <Marker position={position} icon={pinIcon} />}
     </MapContainer>
   );

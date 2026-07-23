@@ -1,8 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CheckIcon, CloseIcon, TrashIcon } from "@/components/icons";
+import {
+  isOthersCategory,
+  OTHERS_CATEGORY_NAME,
+  othersCategoryIdForParent,
+  sortCategoriesWithOthersLast,
+} from "@/lib/categories";
 import { useCatalog } from "@/lib/hooks";
 import { useCatalogStore } from "@/lib/store/catalog-store";
 import type { Category } from "@/lib/types";
@@ -19,6 +25,29 @@ export default function AdminCategoriesPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const parents = useMemo(
+    () => categories.filter((c) => c.parentId === null),
+    [categories]
+  );
+
+  const childrenOf = (parentId: string) => {
+    const existing = sortCategoriesWithOthersLast(
+      categories.filter((c) => c.parentId === parentId)
+    );
+    if (existing.some(isOthersCategory)) return existing;
+
+    // Always surface the fixed catch-all even if the row is missing locally.
+    const placeholder: Category = {
+      id: othersCategoryIdForParent(parentId),
+      name: OTHERS_CATEGORY_NAME,
+      parentId,
+    };
+    return [...existing, placeholder];
+  };
+
+  const usageCount = (id: string) =>
+    products.filter((p) => p.categoryIds.includes(id)).length;
+
   if (!ready) {
     return (
       <p className="py-12 text-center text-[10px] font-medium uppercase tracking-[0.4em] text-ink/40">
@@ -27,15 +56,13 @@ export default function AdminCategoriesPage() {
     );
   }
 
-  const parents = categories.filter((c) => c.parentId === null);
-  const childrenOf = (parentId: string) =>
-    categories.filter((c) => c.parentId === parentId);
-  const usageCount = (id: string) =>
-    products.filter((p) => p.categoryIds.includes(id)).length;
-
   const handleAdd = async (parent: Category) => {
     const name = (newNames[parent.id] ?? "").trim();
     if (!name) return;
+    if (name.toLowerCase() === OTHERS_CATEGORY_NAME.toLowerCase()) {
+      setError('"Others" is fixed under each department and cannot be added.');
+      return;
+    }
     if (
       childrenOf(parent.id).some(
         (c) => c.name.toLowerCase() === name.toLowerCase()
@@ -76,6 +103,10 @@ export default function AdminCategoriesPage() {
   };
 
   const handleDelete = async (cat: Category) => {
+    if (isOthersCategory(cat)) {
+      setError('"Others" cannot be deleted.');
+      return;
+    }
     const used = usageCount(cat.id);
     if (used > 0) {
       window.alert(
@@ -160,6 +191,7 @@ export default function AdminCategoriesPage() {
                 <AnimatePresence initial={false}>
                   {children.map((cat) => {
                     const used = usageCount(cat.id);
+                    const fixed = isOthersCategory(cat);
                     const isEditing = editingId === cat.id;
                     return (
                       <motion.li
@@ -170,7 +202,7 @@ export default function AdminCategoriesPage() {
                         exit={{ opacity: 0 }}
                         className="flex items-center gap-3 py-4"
                       >
-                        {isEditing ? (
+                        {isEditing && !fixed ? (
                           <>
                             <input
                               value={editName}
@@ -210,39 +242,44 @@ export default function AdminCategoriesPage() {
                                 {cat.name}
                               </p>
                               <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-ink/40">
-                                {used} {used === 1 ? "product" : "products"}
+                                {fixed
+                                  ? "Fixed catch-all"
+                                  : `${used} ${used === 1 ? "product" : "products"}`}
                               </p>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingId(cat.id);
-                                setEditName(cat.name);
-                              }}
-                              className="shrink-0 border border-ink/15 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-ink/60 transition-all duration-300 hover:border-ink hover:text-ink"
-                            >
-                              Rename
-                            </button>
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={() => void handleDelete(cat)}
-                              aria-label={`Delete ${cat.name}`}
-                              className="grid size-8 shrink-0 place-items-center text-ink/35 transition-colors hover:bg-brand-soft hover:text-brand"
-                            >
-                              <TrashIcon width={15} height={15} />
-                            </button>
+                            {fixed ? (
+                              <span className="shrink-0 text-[9px] font-medium uppercase tracking-[0.24em] text-ink/35">
+                                Locked
+                              </span>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingId(cat.id);
+                                    setEditName(cat.name);
+                                  }}
+                                  className="shrink-0 border border-ink/15 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-ink/60 transition-all duration-300 hover:border-ink hover:text-ink"
+                                >
+                                  Rename
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => void handleDelete(cat)}
+                                  aria-label={`Delete ${cat.name}`}
+                                  className="grid size-8 shrink-0 place-items-center text-ink/35 transition-colors hover:bg-brand-soft hover:text-brand"
+                                >
+                                  <TrashIcon width={15} height={15} />
+                                </button>
+                              </>
+                            )}
                           </>
                         )}
                       </motion.li>
                     );
                   })}
                 </AnimatePresence>
-                {children.length === 0 && (
-                  <li className="py-10 text-center text-[13px] text-ink/45">
-                    No categories under {parent.name} yet — add one above.
-                  </li>
-                )}
               </ul>
 
               {directUse > 0 && (

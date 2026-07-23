@@ -1,15 +1,16 @@
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
-import goodcatchLogo from "@/lib/images/goodcatch.png";
+import goodcatchMark from "@/lib/images/goodcatch-mark.png";
 
-const logo = goodcatchLogo as StaticImageData;
+const logo = goodcatchMark as StaticImageData;
 
+/** Display heights — mark is ~3.7:1 so width scales with height. */
 const HEIGHT = {
-  sm: 24,
-  md: 30,
-  lg: 40,
-  xl: 56,
-  header: 40,
+  sm: 28,
+  md: 34,
+  lg: 48,
+  xl: 68,
+  header: 32,
 } as const;
 
 export function Logo({
@@ -22,6 +23,7 @@ export function Logo({
   priority?: boolean;
 }) {
   const h = HEIGHT[size];
+  const w = Math.round(h * (logo.width / logo.height));
 
   return (
     <Link
@@ -32,11 +34,11 @@ export function Logo({
       <Image
         src={logo}
         alt="Good Catch"
-        width={logo.width}
-        height={logo.height}
+        width={w}
+        height={h}
         priority={priority}
-        className="w-auto object-contain"
-        style={{ height: h }}
+        className="h-auto w-auto object-contain"
+        style={{ height: h, width: "auto" }}
       />
       {(size === "lg" || size === "xl") && (
         <span className="mt-2.5 text-[8px] font-medium uppercase tracking-[0.5em] text-ink/40">

@@ -18,6 +18,11 @@ interface CartState {
 const sameLine = (a: CartItem, productId: string, size?: string) =>
   a.productId === productId && a.size === size;
 
+const productQty = (items: CartItem[], productId: string) =>
+  items
+    .filter((i) => i.productId === productId)
+    .reduce((sum, i) => sum + i.quantity, 0);
+
 export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
@@ -28,19 +33,46 @@ export const useCartStore = create<CartState>()(
 
       addItem: (item, quantity = 1) =>
         set((s) => {
+          const maxStock = Math.max(0, item.stock ?? 0);
+          if (maxStock <= 0 || quantity <= 0) return s;
+
           const existing = s.items.find((i) =>
             sameLine(i, item.productId, item.size)
           );
-          if (existing) {
+          const room = Math.max(0, maxStock - productQty(s.items, item.productId));
+          const toAdd = Math.min(quantity, room);
+          if (toAdd <= 0) {
+            // Refresh stock on the line if it's already at the cap.
+            if (!existing) return s;
             return {
               items: s.items.map((i) =>
                 sameLine(i, item.productId, item.size)
-                  ? { ...i, quantity: i.quantity + quantity }
+                  ? { ...i, stock: maxStock }
                   : i
               ),
             };
           }
-          return { items: [...s.items, { ...item, quantity }] };
+
+          if (existing) {
+            return {
+              items: s.items.map((i) =>
+                sameLine(i, item.productId, item.size)
+                  ? {
+                      ...i,
+                      quantity: i.quantity + toAdd,
+                      stock: maxStock,
+                      unitPrice: item.unitPrice,
+                      name: item.name,
+                      image: item.image,
+                    }
+                  : i
+              ),
+            };
+          }
+
+          return {
+            items: [...s.items, { ...item, stock: maxStock, quantity: toAdd }],
+          };
         }),
 
       removeItem: (productId, size) =>
@@ -49,20 +81,72 @@ export const useCartStore = create<CartState>()(
         })),
 
       setQuantity: (productId, size, qty) =>
-        set((s) => ({
-          items:
-            qty <= 0
-              ? s.items.filter((i) => !sameLine(i, productId, size))
-              : s.items.map((i) =>
-                  sameLine(i, productId, size) ? { ...i, quantity: qty } : i
-                ),
-        })),
+        set((s) => {
+          if (qty <= 0) {
+            return {
+              items: s.items.filter((i) => !sameLine(i, productId, size)),
+            };
+          }
+
+          const line = s.items.find((i) => sameLine(i, productId, size));
+          if (!line) return s;
+
+          const maxStock = Math.max(0, line.stock ?? line.quantity);
+          const others = productQty(s.items, productId) - line.quantity;
+          const maxForLine = Math.max(0, maxStock - others);
+          const nextQty = Math.min(qty, maxForLine);
+          if (nextQty <= 0) {
+            return {
+              items: s.items.filter((i) => !sameLine(i, productId, size)),
+            };
+          }
+
+          return {
+            items: s.items.map((i) =>
+              sameLine(i, productId, size) ? { ...i, quantity: nextQty } : i
+            ),
+          };
+        }),
 
       clear: () => set({ items: [] }),
     }),
     {
       name: "good-catch-cart",
       partialize: (s) => ({ items: s.items }),
+      merge: (persisted, current) => {
+        const raw = (persisted as Partial<CartState> | undefined)?.items ?? [];
+        const items = raw.map((item) => {
+          const stock =
+            typeof item.stock === "number" && Number.isFinite(item.stock)
+              ? Math.max(0, item.stock)
+              : Math.max(1, item.quantity);
+          return {
+            ...item,
+            stock,
+            quantity: Math.min(Math.max(0, item.quantity), stock),
+          };
+        });
+
+        const byProduct = new Map<string, CartItem[]>();
+        for (const item of items) {
+          const list = byProduct.get(item.productId) ?? [];
+          list.push(item);
+          byProduct.set(item.productId, list);
+        }
+
+        const clamped: CartItem[] = [];
+        for (const lines of byProduct.values()) {
+          const stock = Math.max(...lines.map((l) => l.stock));
+          let remaining = stock;
+          for (const line of lines) {
+            const qty = Math.min(line.quantity, Math.max(0, remaining));
+            remaining -= qty;
+            if (qty > 0) clamped.push({ ...line, stock, quantity: qty });
+          }
+        }
+
+        return { ...current, ...persisted, items: clamped };
+      },
     }
   )
 );
@@ -72,3 +156,12 @@ export const selectCartCount = (s: CartState) =>
 
 export const selectCartTotal = (s: CartState) =>
   s.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+
+/** How many more units of this product can still be added to the cart. */
+export function cartRoomForProduct(
+  items: CartItem[],
+  productId: string,
+  stock: number
+): number {
+  return Math.max(0, stock - productQty(items, productId));
+}

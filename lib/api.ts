@@ -1,4 +1,5 @@
 import { createClient } from "./supabase/client";
+import { OTHERS_CATEGORY_IDS, OTHERS_CATEGORY_NAME } from "./categories";
 import type { Brand, Category, Product } from "./types";
 
 /**
@@ -238,6 +239,15 @@ export async function removeBrand(id: string): Promise<void> {
 }
 
 export async function createCategory(category: Category): Promise<Category> {
+  if (
+    (OTHERS_CATEGORY_IDS as readonly string[]).includes(category.id) ||
+    category.name.trim().toLowerCase() === OTHERS_CATEGORY_NAME.toLowerCase()
+  ) {
+    throw new Error(
+      '"Others" is a fixed catch-all and cannot be created manually.'
+    );
+  }
+
   const { data, error } = await createClient()
     .from("categories")
     .insert({
@@ -253,6 +263,13 @@ export async function createCategory(category: Category): Promise<Category> {
 }
 
 export async function renameCategory(id: string, name: string): Promise<void> {
+  if ((OTHERS_CATEGORY_IDS as readonly string[]).includes(id)) {
+    throw new Error('"Others" cannot be renamed.');
+  }
+  if (name.trim().toLowerCase() === OTHERS_CATEGORY_NAME.toLowerCase()) {
+    throw new Error('"Others" is a reserved category name.');
+  }
+
   const { error } = await createClient()
     .from("categories")
     .update({ name })
@@ -261,6 +278,10 @@ export async function renameCategory(id: string, name: string): Promise<void> {
 }
 
 export async function removeCategory(id: string): Promise<void> {
+  if ((OTHERS_CATEGORY_IDS as readonly string[]).includes(id)) {
+    throw new Error('"Others" cannot be deleted.');
+  }
+
   const { error } = await createClient()
     .from("categories")
     .delete()

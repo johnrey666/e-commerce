@@ -4,7 +4,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect } from "react";
 import { formatPrice } from "@/lib/format";
-import { selectCartTotal, useCartStore } from "@/lib/store/cart-store";
+import {
+  cartRoomForProduct,
+  selectCartTotal,
+  useCartStore,
+} from "@/lib/store/cart-store";
 import { CloseIcon, MinusIcon, PlusIcon, TrashIcon } from "./icons";
 import { ProductImage } from "./ProductImage";
 
@@ -132,11 +136,19 @@ export function CartDrawer() {
                               {item.quantity}
                             </span>
                             <button
+                              type="button"
+                              disabled={
+                                cartRoomForProduct(
+                                  items,
+                                  item.productId,
+                                  item.stock ?? item.quantity
+                                ) <= 0
+                              }
                               onClick={() =>
                                 setQuantity(item.productId, item.size, item.quantity + 1)
                               }
                               aria-label="Increase"
-                              className="grid size-7 place-items-center text-ink/60 transition-colors hover:text-ink"
+                              className="grid size-7 place-items-center text-ink/60 transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
                             >
                               <PlusIcon width={11} height={11} strokeWidth={1.5} />
                             </button>
@@ -160,7 +172,7 @@ export function CartDrawer() {
                     </span>
                   </div>
                   <p className="text-[10px] uppercase tracking-[0.2em] text-ink/35">
-                    Complimentary delivery · GCash at checkout
+                    Shipping calculated at checkout · GCash / PayMongo
                   </p>
                   <Link
                     href="/checkout"

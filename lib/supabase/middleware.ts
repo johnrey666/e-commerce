@@ -38,7 +38,17 @@ export async function updateSession(request: NextRequest) {
   });
 
   // Validates JWT; also refreshes the session when needed.
-  await supabase.auth.getClaims();
+  // Stale/revoked refresh cookies (e.g. after logout elsewhere) throw
+  // refresh_token_not_found — clear them so the request continues as guest.
+  const { error } = await supabase.auth.getClaims();
+  if (
+    error &&
+    (error.code === "refresh_token_not_found" ||
+      error.message?.toLowerCase().includes("refresh token"))
+  ) {
+    // Local-only: token is already invalid server-side.
+    await supabase.auth.signOut({ scope: "local" });
+  }
 
   return supabaseResponse;
 }

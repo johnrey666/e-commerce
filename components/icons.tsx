@@ -113,6 +113,15 @@ export const PinIcon = (p: IconProps) => (
   </svg>
 );
 
+/** Crosshair / locate me. */
+export const LocateIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+    <circle cx="12" cy="12" r="8" />
+  </svg>
+);
+
 export const TagIcon = (p: IconProps) => (
   <svg {...base} {...p}>
     <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7-7A2 2 0 0 1 3 12.2V5a2 2 0 0 1 2-2h7.2a2 2 0 0 1 1.4.6l7 7a2 2 0 0 1 0 2.8Z" />

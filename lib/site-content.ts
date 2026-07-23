@@ -34,6 +34,8 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
   heroVideoUrl: "/sample.mp4",
   brandImages: [],
   brandsTitle: "Sourced from the world's finest brands",
+  lookbookImages: [],
+  lookbookTitle: "The look",
   categoryImages: {},
   storeInfo: DEFAULT_STORE_INFO,
 };
@@ -42,6 +44,8 @@ interface SiteContentRow {
   hero_video_url: string;
   brand_images: string[];
   brands_title?: string | null;
+  lookbook_images?: string[] | null;
+  lookbook_title?: string | null;
   category_images: Record<string, string>;
   store_info?: Partial<StoreInfoContent> | null;
 }
@@ -78,13 +82,16 @@ function mapLandingContent(row: SiteContentRow): LandingContent {
     brandImages: (row.brand_images ?? []).filter(Boolean),
     brandsTitle:
       row.brands_title?.trim() || DEFAULT_LANDING_CONTENT.brandsTitle,
+    lookbookImages: (row.lookbook_images ?? []).filter(Boolean).slice(0, 5),
+    lookbookTitle:
+      row.lookbook_title?.trim() || DEFAULT_LANDING_CONTENT.lookbookTitle,
     categoryImages: row.category_images ?? {},
     storeInfo: mergeStoreInfo(row.store_info),
   };
 }
 
 const SELECT_COLS =
-  "hero_video_url, brand_images, brands_title, category_images, store_info";
+  "hero_video_url, brand_images, brands_title, lookbook_images, lookbook_title, category_images, store_info";
 
 export async function fetchLandingContent(): Promise<LandingContent> {
   const { data, error } = await createClient()
@@ -121,6 +128,12 @@ export async function updateLandingContent(
   if (patch.brandsTitle !== undefined) {
     payload.brands_title = patch.brandsTitle;
   }
+  if (patch.lookbookImages !== undefined) {
+    payload.lookbook_images = patch.lookbookImages.filter(Boolean).slice(0, 5);
+  }
+  if (patch.lookbookTitle !== undefined) {
+    payload.lookbook_title = patch.lookbookTitle;
+  }
   if (patch.categoryImages !== undefined) {
     payload.category_images = patch.categoryImages;
   }
@@ -137,6 +150,18 @@ export async function updateLandingContent(
     .single();
 
   // Older DBs missing brands_title / store_info — retry without those columns.
+  // Lookbook columns are required when patching lookbook; do not silently drop.
+  if (
+    error &&
+    (error.message.includes("lookbook_images") ||
+      error.message.includes("lookbook_title")) &&
+    (patch.lookbookImages !== undefined || patch.lookbookTitle !== undefined)
+  ) {
+    throw new Error(
+      "Lookbook columns are missing. Run supabase/migrations/009_lookbook.sql in the Supabase SQL Editor, then try again."
+    );
+  }
+
   if (
     error &&
     (error.message.includes("brands_title") ||
@@ -145,6 +170,8 @@ export async function updateLandingContent(
     const legacyPayload = { ...payload };
     delete legacyPayload.brands_title;
     delete legacyPayload.store_info;
+    delete legacyPayload.lookbook_images;
+    delete legacyPayload.lookbook_title;
     const legacy = await supabase
       .from("site_content")
       .update(legacyPayload)

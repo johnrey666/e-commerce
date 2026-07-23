@@ -142,10 +142,27 @@ body {
   }
 }
 
+@keyframes logo-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-logo-marquee {
+  animation: logo-marquee 40s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .btn-running-glow {
     animation: none;
     background: linear-gradient(90deg, #ff0040, #00b0ff);
+  }
+
+  .animate-logo-marquee {
+    animation: none;
   }
 }
 

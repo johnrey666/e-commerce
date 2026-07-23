@@ -12,13 +12,14 @@ import { fetchProductById, fetchRelatedProducts } from "@/lib/api";
 import { discountPercent, effectivePrice, formatPrice } from "@/lib/format";
 import { useCatalog } from "@/lib/hooks";
 import { averageRating, fetchReviewsForProduct } from "@/lib/reviews";
-import { useCartStore } from "@/lib/store/cart-store";
+import { cartRoomForProduct, useCartStore } from "@/lib/store/cart-store";
 import type { Product, ProductReview } from "@/lib/types";
 
 export function ProductDetailClient({ id }: { id: string }) {
   const { brands, categories, ready: catalogReady } = useCatalog();
   const addItem = useCartStore((s) => s.addItem);
   const openDrawer = useCartStore((s) => s.openDrawer);
+  const cartItems = useCartStore((s) => s.items);
 
   const [product, setProduct] = useState<Product | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
@@ -111,16 +112,20 @@ export function ProductDetailClient({ id }: { id: string }) {
   const primaryCategory = productCategories[0];
   const percent = discountPercent(product);
   const soldOut = product.stock <= 0;
+  const atCartMax =
+    !soldOut && cartRoomForProduct(cartItems, product.id, product.stock) <= 0;
   const chosenSize = size ?? product.sizes[0];
   const avg = averageRating(reviews);
 
   const handleAdd = () => {
+    if (soldOut || atCartMax) return;
     addItem({
       productId: product.id,
       name: product.name,
       unitPrice: effectivePrice(product),
       image: product.images[0] ?? "placeholder:neutral",
       size: chosenSize,
+      stock: product.stock,
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
@@ -284,17 +289,23 @@ export function ProductDetailClient({ id }: { id: string }) {
           <div className="mt-10">
             <button
               onClick={handleAdd}
-              disabled={soldOut}
+              disabled={soldOut || atCartMax}
               className={`w-full py-5 text-[11px] font-medium uppercase tracking-[0.32em] transition-all duration-500 sm:max-w-sm ${
-                soldOut
+                soldOut || atCartMax
                   ? "cursor-not-allowed bg-ink/15 text-ink/40"
                   : "bg-brand text-white hover:bg-brand-dark"
               }`}
             >
-              {soldOut ? "Sold" : added ? "Added to Bag" : "Add to Bag"}
+              {soldOut
+                ? "Sold"
+                : atCartMax
+                  ? "Max in Bag"
+                  : added
+                    ? "Added to Bag"
+                    : "Add to Bag"}
             </button>
             <p className="mt-4 text-[10px] uppercase tracking-[0.22em] text-ink/40">
-              Complimentary delivery · GCash at checkout
+              Shipping calculated at checkout · GCash / PayMongo
             </p>
           </div>
 
@@ -332,14 +343,20 @@ export function ProductDetailClient({ id }: { id: string }) {
           </div>
           <button
             onClick={handleAdd}
-            disabled={soldOut}
+            disabled={soldOut || atCartMax}
             className={`shrink-0 px-7 py-3.5 text-[10px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 ${
-              soldOut
+              soldOut || atCartMax
                 ? "cursor-not-allowed bg-ink/15 text-ink/40"
                 : "bg-brand text-white active:bg-brand-dark"
             }`}
           >
-            {soldOut ? "Sold" : added ? "Added" : "Add to Bag"}
+            {soldOut
+              ? "Sold"
+              : atCartMax
+                ? "Max"
+                : added
+                  ? "Added"
+                  : "Add to Bag"}
           </button>
         </div>
       </motion.div>

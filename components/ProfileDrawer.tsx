@@ -3,7 +3,11 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { CloseIcon } from "@/components/icons";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CloseIcon,
+} from "@/components/icons";
 import { COUNTRIES, PH_REGIONS, SHIPPING_CARRIERS } from "@/lib/locations";
 import { useAuthStore } from "@/lib/store/auth-store";
 import {
@@ -11,9 +15,15 @@ import {
   useProfileStore,
   type SavedShipping,
 } from "@/lib/store/profile-store";
+import { useToastStore } from "@/lib/store/toast-store";
 
 const labelClass =
   "mb-2 block text-[10px] font-medium uppercase tracking-[0.25em] text-ink/55";
+
+const menuBtnClass =
+  "flex w-full items-center justify-between border border-ink/15 px-4 py-3.5 text-left text-[10px] font-medium uppercase tracking-[0.24em] text-ink/60 transition-colors hover:border-ink hover:text-ink";
+
+type Panel = "menu" | "shipping" | "password";
 
 export function ProfileDrawer({
   open,
@@ -27,6 +37,7 @@ export function ProfileDrawer({
   const email = useAuthStore((s) => s.email);
   const isAdmin = useAuthStore((s) => s.isAdmin);
   const logout = useAuthStore((s) => s.logout);
+  const showToast = useToastStore((s) => s.show);
 
   const shipping = useProfileStore((s) => s.shipping);
   const darkMode = useProfileStore((s) => s.darkMode);
@@ -35,16 +46,24 @@ export function ProfileDrawer({
   const setDarkMode = useProfileStore((s) => s.setDarkMode);
   const changePassword = useProfileStore((s) => s.changePassword);
 
+  const [panel, setPanel] = useState<Panel>("menu");
   const [form, setForm] = useState<SavedShipping>({});
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open && userId) void loadProfile(userId);
   }, [open, userId, loadProfile]);
+
+  useEffect(() => {
+    if (!open) return;
+    setPanel("menu");
+    setErr(null);
+    setPassword("");
+    setConfirm("");
+  }, [open]);
 
   useEffect(() => {
     if (open) setForm({ ...shipping });
@@ -55,12 +74,16 @@ export function ProfileDrawer({
     (value: string) =>
       setForm((f) => ({ ...f, [key]: value }));
 
+  const goMenu = () => {
+    setPanel("menu");
+    setErr(null);
+  };
+
   const onSaveShipping = async (e: FormEvent) => {
     e.preventDefault();
     if (!userId) return;
     setSaving(true);
     setErr(null);
-    setMsg(null);
     const result = await saveShipping(userId, {
       ...form,
       shippingCarrier: form.shippingCarrier ?? DEFAULT_SHIPPING_CARRIER,
@@ -71,13 +94,14 @@ export function ProfileDrawer({
       setErr(result.error ?? "Could not save shipping.");
       return;
     }
-    setMsg("Shipping details saved.");
+    setPanel("menu");
+    onClose();
+    showToast("Shipping address saved");
   };
 
   const onChangePassword = async (e: FormEvent) => {
     e.preventDefault();
     setErr(null);
-    setMsg(null);
     if (password !== confirm) {
       setErr("Passwords do not match.");
       return;
@@ -89,8 +113,17 @@ export function ProfileDrawer({
     }
     setPassword("");
     setConfirm("");
-    setMsg("Password updated.");
+    setPanel("menu");
+    onClose();
+    showToast("Password changed successfully");
   };
+
+  const title =
+    panel === "shipping"
+      ? "Shipping"
+      : panel === "password"
+        ? "Password"
+        : "Profile";
 
   return (
     <AnimatePresence>
@@ -115,17 +148,30 @@ export function ProfileDrawer({
             className="fixed inset-y-0 right-0 z-[75] flex w-full max-w-md flex-col border-l border-ink/10 bg-paper shadow-2xl"
           >
             <div className="flex items-center justify-between border-b border-ink/10 px-6 py-5">
-              <div>
-                <p className="eyebrow">Account</p>
+              <div className="min-w-0 flex-1">
+                {panel !== "menu" ? (
+                  <button
+                    type="button"
+                    onClick={goMenu}
+                    className="mb-2 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.24em] text-ink/45 transition-colors hover:text-ink"
+                  >
+                    <ChevronLeftIcon width={14} height={14} strokeWidth={1.5} />
+                    Back
+                  </button>
+                ) : (
+                  <p className="eyebrow">Account</p>
+                )}
                 <h2 className="mt-1 font-display text-2xl font-medium text-ink">
-                  Profile
+                  {title}
                 </h2>
-                <p className="mt-1 truncate text-[12px] text-ink/45">{email}</p>
+                {panel === "menu" && (
+                  <p className="mt-1 truncate text-[12px] text-ink/45">{email}</p>
+                )}
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="grid size-10 place-items-center border border-ink/15 text-ink/60 hover:border-ink hover:text-ink"
+                className="grid size-10 shrink-0 place-items-center border border-ink/15 text-ink/60 hover:border-ink hover:text-ink"
               >
                 <CloseIcon width={18} height={18} strokeWidth={1.5} />
               </button>
@@ -135,43 +181,93 @@ export function ProfileDrawer({
               {err && (
                 <p className="text-[13px] font-medium text-brand">{err}</p>
               )}
-              {msg && (
-                <p className="text-[13px] text-ink/55">{msg}</p>
+
+              {panel === "menu" && (
+                <>
+                  <section>
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-[11px] font-medium uppercase tracking-[0.3em] text-ink">
+                          Appearance
+                        </h3>
+                        <p className="mt-1 text-[12px] text-ink/45">Dark mode</p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={darkMode}
+                        onClick={() => void setDarkMode(userId, !darkMode)}
+                        className={`relative h-8 w-14 border transition-colors ${
+                          darkMode
+                            ? "border-ink bg-ink"
+                            : "border-ink/20 bg-cream"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 size-6 bg-paper transition-all ${
+                            darkMode ? "left-7" : "left-0.5"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </section>
+
+                  <section className="space-y-3">
+                    {!isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setErr(null);
+                          setPanel("shipping");
+                        }}
+                        className={menuBtnClass}
+                      >
+                        Shipping Details
+                        <ChevronRightIcon
+                          width={16}
+                          height={16}
+                          strokeWidth={1.5}
+                        />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setErr(null);
+                        setPanel("password");
+                      }}
+                      className={menuBtnClass}
+                    >
+                      Change Password
+                      <ChevronRightIcon
+                        width={16}
+                        height={16}
+                        strokeWidth={1.5}
+                      />
+                    </button>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          router.push("/admin");
+                        }}
+                        className={menuBtnClass}
+                      >
+                        Open Admin Dashboard
+                        <ChevronRightIcon
+                          width={16}
+                          height={16}
+                          strokeWidth={1.5}
+                        />
+                      </button>
+                    )}
+                  </section>
+                </>
               )}
 
-              <section>
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-[11px] font-medium uppercase tracking-[0.3em] text-ink">
-                      Appearance
-                    </h3>
-                    <p className="mt-1 text-[12px] text-ink/45">Dark mode</p>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={darkMode}
-                    onClick={() => void setDarkMode(userId, !darkMode)}
-                    className={`relative h-8 w-14 border transition-colors ${
-                      darkMode
-                        ? "border-ink bg-ink"
-                        : "border-ink/20 bg-cream"
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 size-6 bg-paper transition-all ${
-                        darkMode ? "left-7" : "left-0.5"
-                      }`}
-                    />
-                  </button>
-                </div>
-              </section>
-
-              {!isAdmin && (
+              {panel === "shipping" && !isAdmin && (
                 <form onSubmit={onSaveShipping} className="space-y-4">
-                  <h3 className="text-[11px] font-medium uppercase tracking-[0.3em] text-ink">
-                    Shipping details
-                  </h3>
                   <p className="text-[12px] leading-relaxed text-ink/45">
                     Saved details auto-fill checkout when you place an order.
                   </p>
@@ -304,64 +400,53 @@ export function ProfileDrawer({
                 </form>
               )}
 
-              <form onSubmit={onChangePassword} className="space-y-4">
-                <h3 className="text-[11px] font-medium uppercase tracking-[0.3em] text-ink">
-                  Change password
-                </h3>
-                <div>
-                  <label className={labelClass}>New password</label>
-                  <input
-                    type="password"
-                    minLength={6}
-                    className="input-field"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Confirm password</label>
-                  <input
-                    type="password"
-                    minLength={6}
-                    className="input-field"
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    required
-                  />
-                </div>
-                <button type="submit" className="btn-secondary w-full !px-6">
-                  Update Password
-                </button>
-              </form>
-
-              {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    router.push("/admin");
-                  }}
-                  className="w-full border border-ink/15 py-3 text-[10px] font-medium uppercase tracking-[0.24em] text-ink/60 hover:border-ink hover:text-ink"
-                >
-                  Open Admin Dashboard
-                </button>
+              {panel === "password" && (
+                <form onSubmit={onChangePassword} className="space-y-4">
+                  <div>
+                    <label className={labelClass}>New password</label>
+                    <input
+                      type="password"
+                      minLength={6}
+                      className="input-field"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Confirm password</label>
+                    <input
+                      type="password"
+                      minLength={6}
+                      className="input-field"
+                      value={confirm}
+                      onChange={(e) => setConfirm(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="btn-secondary w-full !px-6">
+                    Update Password
+                  </button>
+                </form>
               )}
             </div>
 
-            <div className="border-t border-ink/10 p-6">
-              <button
-                type="button"
-                onClick={async () => {
-                  await logout();
-                  onClose();
-                  router.push("/");
-                }}
-                className="w-full border border-brand/30 py-3.5 text-[10px] font-medium uppercase tracking-[0.24em] text-brand transition-colors hover:bg-brand hover:text-white"
-              >
-                Log Out
-              </button>
-            </div>
+            {panel === "menu" && (
+              <div className="border-t border-ink/10 p-6">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await logout();
+                    onClose();
+                    showToast("Logged out successfully");
+                    router.push("/");
+                  }}
+                  className="w-full border border-brand/30 py-3.5 text-[10px] font-medium uppercase tracking-[0.24em] text-brand transition-colors hover:bg-brand hover:text-white"
+                >
+                  Log Out
+                </button>
+              </div>
+            )}
           </motion.aside>
         </>
       )}

@@ -136,7 +136,7 @@ export const useCartStore = create<CartState>()(
 
         const clamped: CartItem[] = [];
         for (const lines of byProduct.values()) {
-          const stock = Math.max(...lines.map((l) => l.stock));
+          const stock = Math.max(0, ...lines.map((l) => l.stock ?? 0));
           let remaining = stock;
           for (const line of lines) {
             const qty = Math.min(line.quantity, Math.max(0, remaining));
@@ -145,7 +145,11 @@ export const useCartStore = create<CartState>()(
           }
         }
 
-        return { ...current, ...persisted, items: clamped };
+        return {
+          ...current,
+          ...(typeof persisted === "object" && persisted ? persisted : {}),
+          items: clamped,
+        };
       },
     }
   )
